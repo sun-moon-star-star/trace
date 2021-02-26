@@ -11,21 +11,40 @@ const NoSet SpanType = SpanType(0)
 const ChildOf SpanType = SpanType(1)
 const FollowsFrom SpanType = SpanType(2)
 
-type Map map[string]interface{}
+type TagMap map[string]interface{}
 
 type ValueWithTime struct {
-	Time  string
+	Time  time.Time
 	Value interface{}
 }
 
-func NewMap() Map { return make(Map) }
+type LogMap map[string]ValueWithTime
+type BaggageMap map[string]ValueWithTime
 
-type FormatMapStrategy func(maps Map) string
+type FormatTagMapStrategy func(maps TagMap) string
+type FormatLogMapStrategy func(maps LogMap) string
+type FormatBaggageMapStrategy func(maps BaggageMap) string
 
-var DefaultFormatMapStrategy FormatMapStrategy = func(maps Map) string {
-	info := fmt.Sprintf("[%s] :", time.Now().Format("2006-01-02 15:04:05.000000"))
+var DefaultFormatTagMapStrategy FormatTagMapStrategy = func(maps TagMap) string {
+	var info string
 	for key, value := range maps {
 		info += fmt.Sprintf(" [%s: %+v]", key, value)
+	}
+	return info
+}
+
+var DefaultFormatLogMapStrategy FormatLogMapStrategy = func(maps LogMap) string {
+	var info string
+	for key, value := range maps {
+		info += fmt.Sprintf(" [%s(%s): %+v]", key, value.Time.Format("15:04:05.000000"), value.Value)
+	}
+	return info
+}
+
+var DefaultFormatBaggageMapStrategy FormatBaggageMapStrategy = func(maps BaggageMap) string {
+	var info string
+	for key, value := range maps {
+		info += fmt.Sprintf(" [%s(%s): %+v]", key, value.Time.Format("15:04:05.000000"), value.Value)
 	}
 	return info
 }
@@ -44,23 +63,9 @@ var DefaultFormatSpannerStrategy FormatSpannerStrategy = func(s *Spanner) string
 			time.Now().Format("2006-01-02 15:04:05.000000"))
 	}
 
-	info += " \n{Baggages:"
-	for key, value := range s.Baggages {
-		info += fmt.Sprintf(" [%s: %+v]", key, value)
-	}
-	info += "}"
-
-	info += " \n{Tags:"
-	for key, value := range s.Tags {
-		info += fmt.Sprintf(" [%s: %+v]", key, value)
-	}
-	info += "}"
-
-	info += " \n{Logs:"
-	for key, value := range s.Logs {
-		info += fmt.Sprintf(" [%s: %+v]", key, value)
-	}
-	info += "}"
+	info += " { Tags:" + s.FormatTagMapStrategy(s.Tags) + "}"
+	info += " { Logs:" + s.FormatLogMapStrategy(s.Logs) + "}"
+	info += " { Baggage:" + s.FormatBaggageMapStrategy(s.Baggages) + "}"
 
 	return info
 }
@@ -75,11 +80,14 @@ type Spanner struct {
 	StartTime time.Time
 	EndTime   time.Time
 
-	Tags     Map
-	Logs     Map
-	Baggages Map
+	Tags     TagMap
+	Logs     LogMap
+	Baggages BaggageMap
 
-	FormatMapStrategy     FormatMapStrategy
+	FormatTagMapStrategy     FormatTagMapStrategy
+	FormatLogMapStrategy     FormatLogMapStrategy
+	FormatBaggageMapStrategy FormatBaggageMapStrategy
+
 	FormatSpannerStrategy FormatSpannerStrategy
 
 	Father   *Spanner
@@ -91,11 +99,14 @@ func NewSpanner() *Spanner {
 	return &Spanner{
 		StartTime: time.Now(),
 
-		Tags:     NewMap(),
-		Logs:     NewMap(),
-		Baggages: NewMap(),
+		Tags:     make(TagMap),
+		Logs:     make(LogMap),
+		Baggages: make(BaggageMap),
 
-		FormatMapStrategy:     DefaultFormatMapStrategy,
+		FormatTagMapStrategy:     DefaultFormatTagMapStrategy,
+		FormatLogMapStrategy:     DefaultFormatLogMapStrategy,
+		FormatBaggageMapStrategy: DefaultFormatBaggageMapStrategy,
+
 		FormatSpannerStrategy: DefaultFormatSpannerStrategy,
 	}
 }
@@ -111,14 +122,14 @@ func (s *Spanner) Tag(key string, value interface{}) {
 
 func (s *Spanner) Log(key string, value interface{}) {
 	s.Logs[key] = ValueWithTime{
-		Time:  time.Now().Format("2006-01-02 15:04:05.000000"),
+		Time:  time.Now(),
 		Value: value,
 	}
 }
 
 func (s *Spanner) Baggage(key string, value interface{}) {
 	s.Baggages[key] = ValueWithTime{
-		Time:  time.Now().Format("2006-01-02 15:04:05.000000"),
+		Time:  time.Now(),
 		Value: value,
 	}
 }
