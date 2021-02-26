@@ -11,11 +11,16 @@ const NoSet SpanType = SpanType(0)
 const ChildOf SpanType = SpanType(1)
 const FollowsFrom SpanType = SpanType(2)
 
-type TagMap map[string]interface{}
+type Map map[string]interface{}
 
-func NewTagMap() TagMap { return make(TagMap) }
+type ValueWithTime struct {
+	Time  string
+	Value interface{}
+}
 
-type FormatTagMapStrategy func(TagMap) string
+func NewMap() Map { return make(Map) }
+
+type FormatMapStrategy func(maps Map) string
 
 var DefaultFormatMapStrategy FormatMapStrategy = func(maps Map) string {
 	info := fmt.Sprintf("[%s] :", time.Now().Format("2006-01-02 15:04:05.000000"))
@@ -39,19 +44,19 @@ var DefaultFormatSpannerStrategy FormatSpannerStrategy = func(s *Spanner) string
 			time.Now().Format("2006-01-02 15:04:05.000000"))
 	}
 
-	info += " {Baggages:"
+	info += " \n{Baggages:"
 	for key, value := range s.Baggages {
 		info += fmt.Sprintf(" [%s: %+v]", key, value)
 	}
 	info += "}"
 
-	info += " {Tags:"
+	info += " \n{Tags:"
 	for key, value := range s.Tags {
 		info += fmt.Sprintf(" [%s: %+v]", key, value)
 	}
 	info += "}"
 
-	info += " {Logs:"
+	info += " \n{Logs:"
 	for key, value := range s.Logs {
 		info += fmt.Sprintf(" [%s: %+v]", key, value)
 	}
@@ -84,10 +89,12 @@ type Spanner struct {
 
 func NewSpanner() *Spanner {
 	return &Spanner{
-		StartTime:             time.Now(),
-		Tags:                  NewMap(),
-		Logs:                  NewMap(),
-		Baggages:              NewMap(),
+		StartTime: time.Now(),
+
+		Tags:     NewMap(),
+		Logs:     NewMap(),
+		Baggages: NewMap(),
+
 		FormatMapStrategy:     DefaultFormatMapStrategy,
 		FormatSpannerStrategy: DefaultFormatSpannerStrategy,
 	}
@@ -96,4 +103,22 @@ func NewSpanner() *Spanner {
 func (s *Spanner) End() {
 	s.EndTime = time.Now()
 	s.Stop = true
+}
+
+func (s *Spanner) Tag(key string, value interface{}) {
+	s.Tags[key] = value
+}
+
+func (s *Spanner) Log(key string, value interface{}) {
+	s.Logs[key] = ValueWithTime{
+		Time:  time.Now().Format("2006-01-02 15:04:05.000000"),
+		Value: value,
+	}
+}
+
+func (s *Spanner) Baggage(key string, value interface{}) {
+	s.Baggages[key] = ValueWithTime{
+		Time:  time.Now().Format("2006-01-02 15:04:05.000000"),
+		Value: value,
+	}
 }

@@ -9,13 +9,13 @@ import (
 func TestSpan(t *testing.T) {
 	Spanner := trace.NewSpanner()
 
-	Spanner.Tags["id"] = 123456789
-	Spanner.Tags["name"] = "zhaolu"
+	Spanner.Tag("id", 123456789)
+	Spanner.Tag("name", "zhaolu")
 
-	Spanner.Logs["error"] = errors.New("unknown error")
-	Spanner.Logs["action"] = "success"
+	Spanner.Log("error", errors.New("unknown error"))
+	Spanner.Log("action", "success")
 
-	Spanner.Baggages["data-access"] = "(0, ok)"
+	Spanner.Baggage("data-access", "(0, ok)")
 
 	t.Log(Spanner.FormatSpannerStrategy(Spanner))
 
