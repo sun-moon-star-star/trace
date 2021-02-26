@@ -30,11 +30,11 @@ type FormatSpanerStrategy func(*Spaner) string
 var DefaultFormatSpanerStrategy FormatSpanerStrategy = func(s *Spaner) string {
 	var info string
 	if s.Stop {
-		info = fmt.Sprintf("[%s,%s] :",
+		info = fmt.Sprintf("[%s, %s] :",
 			s.StartTime.Format("2006-01-02 15:04:05.000000"),
 			s.EndTime.Format("2006-01-02 15:04:05.000000"))
 	} else {
-		info = fmt.Sprintf("[%s,%s] :",
+		info = fmt.Sprintf("[%s, %s] :",
 			s.StartTime.Format("2006-01-02 15:04:05.000000"),
 			time.Now().Format("2006-01-02 15:04:05.000000"))
 	}
