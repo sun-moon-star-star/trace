@@ -26,7 +26,7 @@ func TestSpan(t *testing.T) {
 		return info
 	}
 
-	Spanner.TraceId = "trace_test"
+	Spanner.TraceName = "trace_test"
 	Spanner.SpanName = "span_test"
 
 	Spanner.Tag("id", 123456789)

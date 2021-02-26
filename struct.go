@@ -2,12 +2,11 @@ package trace
 
 type Trace struct {
 	// projectId - timeId - randomId
-	Id        uint64 `json:"id" gorm:"type:bigint(20) unsigned not null primaryKey autoIncrement;"`
-	TraceId   string `json:"trace_id" gorm:"varchar(32) not null"`
+	TraceId   uint64 `json:"id" gorm:"type:bigint(20) unsigned not null primaryKey autoIncrement;"`
 	TraceName string `json:"trace_name" gorm:"varchar(255)"`
 	StartTime string `json:"start_time" gorm:"datetime(6)"`
 	EndTime   string `json:"end_time" gorm:"datetime(6)"`
-	Summary   string `json:"summary" gorm:"datetime(4096)"`
+	Summary   string `json:"summary" gorm:"varchar(4096)"`
 }
 
 type Span struct {
