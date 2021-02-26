@@ -11,11 +11,11 @@ const NoSet SpanType = SpanType(0)
 const ChildOf SpanType = SpanType(1)
 const FollowsFrom SpanType = SpanType(2)
 
-type Map map[string]interface{}
+type TagMap map[string]interface{}
 
-func NewMap() Map { return make(Map) }
+func NewTagMap() TagMap { return make(TagMap) }
 
-type FormatMapStrategy func(Map) string
+type FormatTagMapStrategy func(TagMap) string
 
 var DefaultFormatMapStrategy FormatMapStrategy = func(maps Map) string {
 	info := fmt.Sprintf("[%s] :", time.Now().Format("2006-01-02 15:04:05.000000"))
