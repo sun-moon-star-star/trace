@@ -1,7 +1,6 @@
 package trace
 
 type Trace struct {
-	// projectId - timeId - randomId
 	TraceId   uint64 `json:"id" gorm:"type:bigint(20) unsigned not null primaryKey autoIncrement;"`
 	TraceName string `json:"trace_name" gorm:"varchar(255)"`
 	StartTime string `json:"start_time" gorm:"datetime(6)"`

@@ -16,9 +16,9 @@ type TestInfo struct {
 }
 
 func TestSpan(t *testing.T) {
-	Spanner := trace.NewSpanner()
+	spanner := trace.NewSpanner()
 
-	Spanner.FormatBaggageMapStrategy = func(maps trace.BaggageMap) string {
+	spanner.FormatBaggageMapStrategy = func(maps trace.BaggageMap) string {
 		var info string
 		for key, value := range maps {
 			info += fmt.Sprintf(" [%s(%s)->: %+v]", key, value.Time.Format("15:04:05.000000"), value.Value)
@@ -26,32 +26,32 @@ func TestSpan(t *testing.T) {
 		return info
 	}
 
-	Spanner.TraceName = "trace_test"
-	Spanner.SpanName = "span_test"
+	spanner.TraceName = "trace_test"
+	spanner.SpanName = "span_test"
 
-	Spanner.Tag("id", 123456789)
-	Spanner.Tag("name", "zhaolu")
+	spanner.Tag("id", 123456789)
+	spanner.Tag("name", "zhaolu")
 
-	Spanner.Log("error", errors.New("unknown error"))
-	Spanner.Log("action", "success")
+	spanner.Log("error", errors.New("unknown error"))
+	spanner.Log("action", "success")
 
 	info := TestInfo{
 		Id:   random.RandomUint64(),
 		Desc: "test_info",
 		Time: time.Now(),
 	}
-	Spanner.Log("info", info)
+	spanner.Log("info", info)
 
-	Spanner.Baggage("data-access", "(0, ok)")
+	spanner.Baggage("data-access", "(0, ok)")
 
-	t.Log(Spanner.FormatSpannerStrategy(Spanner))
+	t.Log(spanner.FormatSpannerStrategy(spanner))
 
-	Spanner.End()
+	spanner.End()
 
-	t.Log(Spanner.FormatTagMapStrategy(Spanner.Tags))
-	t.Log(Spanner.FormatLogMapStrategy(Spanner.Logs))
-	t.Log(Spanner.FormatBaggageMapStrategy(Spanner.Baggages))
+	t.Log(spanner.FormatTagMapStrategy(spanner.Tags))
+	t.Log(spanner.FormatLogMapStrategy(spanner.Logs))
+	t.Log(spanner.FormatBaggageMapStrategy(spanner.Baggages))
 
-	t.Log(Spanner.FormatSpannerStrategy(Spanner))
-	t.Log(Spanner.FormatSpannerStrategy(Spanner))
+	t.Log(spanner.FormatSpannerStrategy(spanner))
+	t.Log(spanner.FormatSpannerStrategy(spanner))
 }

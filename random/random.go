@@ -11,6 +11,11 @@ func init() {
 	rand.Seed(time.Now().Unix() ^ int64(os.Getpid()))
 }
 
+// for uuid sequenceId
+func RandomUint12() uint16 {
+	return uint16(rand.Int31n(4096))
+}
+
 func RandomUint64() uint64 {
 	return uint64(rand.Uint32())<<32 + uint64(rand.Uint32())
 }
