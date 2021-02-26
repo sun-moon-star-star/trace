@@ -3,6 +3,7 @@ package trace
 import (
 	"fmt"
 	"time"
+	"trace/random"
 )
 
 type SpanType uint64
@@ -53,26 +54,32 @@ type FormatSpannerStrategy func(*Spanner) string
 
 var DefaultFormatSpannerStrategy FormatSpannerStrategy = func(s *Spanner) string {
 	var info string
+
 	if s.Stop {
-		info = fmt.Sprintf("[%s, %s] :",
+		info = fmt.Sprintf("[%s, %s] ",
 			s.StartTime.Format("2006-01-02 15:04:05.000000"),
 			s.EndTime.Format("2006-01-02 15:04:05.000000"))
 	} else {
-		info = fmt.Sprintf("[%s, %s] :",
+		info = fmt.Sprintf("[%s, %s] ",
 			s.StartTime.Format("2006-01-02 15:04:05.000000"),
 			time.Now().Format("2006-01-02 15:04:05.000000"))
 	}
 
-	info += " { Tags:" + s.FormatTagMapStrategy(s.Tags) + "}"
-	info += " { Logs:" + s.FormatLogMapStrategy(s.Logs) + "}"
-	info += " { Baggage:" + s.FormatBaggageMapStrategy(s.Baggages) + "}"
+	info += fmt.Sprintf("TraceId: %s, SpanId: %d, SpanName: %s", s.TraceId, s.SpanId, s.SpanName)
+
+	info += ", Tags: {" + s.FormatTagMapStrategy(s.Tags) + " }"
+	info += ", Logs: {" + s.FormatLogMapStrategy(s.Logs) + " }"
+	info += ", Baggages: {" + s.FormatBaggageMapStrategy(s.Baggages) + " }"
 
 	return info
 }
 
 type Spanner struct {
-	TraceId      uint64
-	SpanId       uint64
+	TraceId string
+
+	SpanId   uint64
+	SpanName string
+
 	ParentSpanId uint64
 	SpanType     SpanType
 
@@ -97,6 +104,8 @@ type Spanner struct {
 
 func NewSpanner() *Spanner {
 	return &Spanner{
+		SpanId: random.RandomUint64(),
+
 		StartTime: time.Now(),
 
 		Tags:     make(TagMap),

@@ -8,6 +8,8 @@ import (
 
 func TestSpan(t *testing.T) {
 	Spanner := trace.NewSpanner()
+	Spanner.TraceId = "trace_test"
+	Spanner.SpanName = "span_test"
 
 	Spanner.Tag("id", 123456789)
 	Spanner.Tag("name", "zhaolu")
@@ -31,13 +33,13 @@ func TestSpan(t *testing.T) {
 
 /**
 === RUN   TestSpan
-    span_test.go:20: [2021-02-26 13:58:13.712473, 2021-02-26 13:58:13.712600] : { Tags: [id: 123456789] [name: zhaolu]} { Logs: [error(13:58:13.712475): unknown error] [action(13:58:13.712476): success]} { Baggage: [data-access(13:58:13.712476): (0, ok)]}
-    span_test.go:24:  [id: 123456789] [name: zhaolu]
-    span_test.go:25:  [error(13:58:13.712475): unknown error] [action(13:58:13.712476): success]
-    span_test.go:26:  [data-access(13:58:13.712476): (0, ok)]
-    span_test.go:28: [2021-02-26 13:58:13.712473, 2021-02-26 13:58:13.712647] : { Tags: [id: 123456789] [name: zhaolu]} { Logs: [error(13:58:13.712475): unknown error] [action(13:58:13.712476): success]} { Baggage: [data-access(13:58:13.712476): (0, ok)]}
-    span_test.go:29: [2021-02-26 13:58:13.712473, 2021-02-26 13:58:13.712647] : { Tags: [id: 123456789] [name: zhaolu]} { Logs: [error(13:58:13.712475): unknown error] [action(13:58:13.712476): success]} { Baggage: [data-access(13:58:13.712476): (0, ok)]}
+    span_test.go:22: [2021-02-26 14:32:44.526820, 2021-02-26 14:32:44.526953] TraceId: trace_test, SpanId: 2211634155081678851, SpanName: span_test, Tags: { [id: 123456789] [name: zhaolu] }, Logs: { [error(14:32:44.526828): unknown error] [action(14:32:44.526828): success] }, Baggages: { [data-access(14:32:44.526828): (0, ok)] }
+    span_test.go:26:  [id: 123456789] [name: zhaolu]
+    span_test.go:27:  [action(14:32:44.526828): success] [error(14:32:44.526828): unknown error]
+    span_test.go:28:  [data-access(14:32:44.526828): (0, ok)]
+    span_test.go:30: [2021-02-26 14:32:44.526820, 2021-02-26 14:32:44.527090] TraceId: trace_test, SpanId: 2211634155081678851, SpanName: span_test, Tags: { [id: 123456789] [name: zhaolu] }, Logs: { [error(14:32:44.526828): unknown error] [action(14:32:44.526828): success] }, Baggages: { [data-access(14:32:44.526828): (0, ok)] }
+    span_test.go:31: [2021-02-26 14:32:44.526820, 2021-02-26 14:32:44.527090] TraceId: trace_test, SpanId: 2211634155081678851, SpanName: span_test, Tags: { [id: 123456789] [name: zhaolu] }, Logs: { [error(14:32:44.526828): unknown error] [action(14:32:44.526828): success] }, Baggages: { [data-access(14:32:44.526828): (0, ok)] }
 --- PASS: TestSpan (0.00s)
 PASS
-ok      trace   0.007s
+ok      trace   0.013s
 */

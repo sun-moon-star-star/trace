@@ -1,3 +1,4 @@
 package trace
 
-type Tracer struct{}
+type Tracer struct {
+}
