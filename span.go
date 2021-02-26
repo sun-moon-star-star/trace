@@ -25,9 +25,9 @@ var DefaultFormatMapStrategy FormatMapStrategy = func(maps Map) string {
 	return info
 }
 
-type FormatSpanerStrategy func(*Spaner) string
+type FormatSpannerStrategy func(*Spanner) string
 
-var DefaultFormatSpanerStrategy FormatSpanerStrategy = func(s *Spaner) string {
+var DefaultFormatSpannerStrategy FormatSpannerStrategy = func(s *Spanner) string {
 	var info string
 	if s.Stop {
 		info = fmt.Sprintf("[%s, %s] :",
@@ -60,7 +60,7 @@ var DefaultFormatSpanerStrategy FormatSpanerStrategy = func(s *Spaner) string {
 	return info
 }
 
-type Spaner struct {
+type Spanner struct {
 	TraceId      uint64
 	SpanId       uint64
 	ParentSpanId uint64
@@ -74,26 +74,26 @@ type Spaner struct {
 	Logs     Map
 	Baggages Map
 
-	FormatMapStrategy    FormatMapStrategy
-	FormatSpanerStrategy FormatSpanerStrategy
+	FormatMapStrategy     FormatMapStrategy
+	FormatSpannerStrategy FormatSpannerStrategy
 
-	Father   *Spaner
-	Children *Spaner
-	Next     *Spaner
+	Father   *Spanner
+	Children *Spanner
+	Next     *Spanner
 }
 
-func NewSpaner() *Spaner {
-	return &Spaner{
-		StartTime:            time.Now(),
-		Tags:                 NewMap(),
-		Logs:                 NewMap(),
-		Baggages:             NewMap(),
-		FormatMapStrategy:    DefaultFormatMapStrategy,
-		FormatSpanerStrategy: DefaultFormatSpanerStrategy,
+func NewSpanner() *Spanner {
+	return &Spanner{
+		StartTime:             time.Now(),
+		Tags:                  NewMap(),
+		Logs:                  NewMap(),
+		Baggages:              NewMap(),
+		FormatMapStrategy:     DefaultFormatMapStrategy,
+		FormatSpannerStrategy: DefaultFormatSpannerStrategy,
 	}
 }
 
-func (s *Spaner) End() {
+func (s *Spanner) End() {
 	s.EndTime = time.Now()
 	s.Stop = true
 }

@@ -7,26 +7,26 @@ import (
 )
 
 func TestSpan(t *testing.T) {
-	spaner := trace.NewSpaner()
+	Spanner := trace.NewSpanner()
 
-	spaner.Tags["id"] = 123456789
-	spaner.Tags["name"] = "zhaolu"
+	Spanner.Tags["id"] = 123456789
+	Spanner.Tags["name"] = "zhaolu"
 
-	spaner.Logs["error"] = errors.New("unknown error")
-	spaner.Logs["action"] = "success"
+	Spanner.Logs["error"] = errors.New("unknown error")
+	Spanner.Logs["action"] = "success"
 
-	spaner.Baggages["data-access"] = "(0, ok)"
+	Spanner.Baggages["data-access"] = "(0, ok)"
 
-	t.Log(spaner.FormatSpanerStrategy(spaner))
+	t.Log(Spanner.FormatSpannerStrategy(Spanner))
 
-	spaner.End()
+	Spanner.End()
 
-	t.Log(spaner.FormatMapStrategy(spaner.Tags))
-	t.Log(spaner.FormatMapStrategy(spaner.Logs))
-	t.Log(spaner.FormatMapStrategy(spaner.Baggages))
+	t.Log(Spanner.FormatMapStrategy(Spanner.Tags))
+	t.Log(Spanner.FormatMapStrategy(Spanner.Logs))
+	t.Log(Spanner.FormatMapStrategy(Spanner.Baggages))
 
-	t.Log(spaner.FormatSpanerStrategy(spaner))
-	t.Log(spaner.FormatSpanerStrategy(spaner))
+	t.Log(Spanner.FormatSpannerStrategy(Spanner))
+	t.Log(Spanner.FormatSpannerStrategy(Spanner))
 }
 
 /**
