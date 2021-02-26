@@ -55,20 +55,20 @@ var DefaultFormatSpannerStrategy FormatSpannerStrategy = func(s *Spanner) string
 	var info string
 
 	if s.Stop {
-		info = fmt.Sprintf("[%s, %s] ",
+		info = fmt.Sprintf("[%s, %s]",
 			s.StartTime.Format("2006-01-02 15:04:05.000000"),
 			s.EndTime.Format("2006-01-02 15:04:05.000000"))
 	} else {
-		info = fmt.Sprintf("[%s, %s] ",
+		info = fmt.Sprintf("[%s, %s]",
 			s.StartTime.Format("2006-01-02 15:04:05.000000"),
 			time.Now().Format("2006-01-02 15:04:05.000000"))
 	}
 
-	info += fmt.Sprintf("TraceId: %s, SpanId: %d, SpanName: %s", s.TraceId, s.SpanId, s.SpanName)
+	info += fmt.Sprintf(" [TraceId: %s] [SpanId: %d] [SpanName: %s]", s.TraceId, s.SpanId, s.SpanName)
 
-	info += ", Tags: {" + s.FormatTagMapStrategy(s.Tags) + " }"
-	info += ", Logs: {" + s.FormatLogMapStrategy(s.Logs) + " }"
-	info += ", Baggages: {" + s.FormatBaggageMapStrategy(s.Baggages) + " }"
+	info += s.FormatTagMapStrategy(s.Tags)
+	info += s.FormatLogMapStrategy(s.Logs)
+	info += s.FormatBaggageMapStrategy(s.Baggages)
 
 	return info
 }
