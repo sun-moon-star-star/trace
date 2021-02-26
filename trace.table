@@ -16,8 +16,8 @@ desc trace
 | id          | bigint(20) unsigned | NO   | PRI | NULL    | auto_increment |
 | trace_id    | varchar(32)         | NO   |     | NULL    |                |
 | trace_name  | varchar(255)        | YES  |     | NULL    |                |
-| start_time  | datetime(3)         | YES  |     | NULL    |                |
-| finish_time | datetime(3)         | YES  |     | NULL    |                |
+| start_time  | datetime(9)         | YES  |     | NULL    |                |
+| finish_time | datetime(9)         | YES  |     | NULL    |                |
 | summary     | varchar(4096)       | YES  |     | NULL    |                |
 +-------------+---------------------+------+-----+---------+----------------+
 
@@ -27,8 +27,8 @@ desc span
 +-------------+---------------------+------+-----+---------+----------------+
 | span_id     | bigint(20) unsigned | NO   | PRI | NULL    | auto_increment |
 | span_name   | varchar(255)        | YES  |     | NULL    |                |
-| start_time  | datetime(3)         | YES  |     | NULL    |                |
-| finish_time | datetime(3)         | YES  |     | NULL    |                |
+| start_time  | datetime(9)         | YES  |     | NULL    |                |
+| finish_time | datetime(9)         | YES  |     | NULL    |                |
 | trace_id    | varchar(32)         | NO   |     | NULL    |                |
 +-------------+---------------------+------+-----+---------+----------------+
 
@@ -39,7 +39,7 @@ desc span_reference
 | span_reference_id | bigint(20) unsigned | NO   | PRI | NULL    | auto_increment |
 | father_span_id    | bigint(20) unsigned | NO   |     | NULL    |                |
 | child_span_id     | bigint(20) unsigned | NO   |     | NULL    |                |
-| relationship      | int(11)             | YES  |     | NULL    |                |
+| type              | int(11)             | YES  |     | NULL    |                |
 +-------------------+---------------------+------+-----+---------+----------------+
 
 desc tag
@@ -59,7 +59,7 @@ desc log
 | log_id   | bigint(20) unsigned | NO   | PRI | NULL    | auto_increment |
 | field    | varchar(255)        | YES  |     | NULL    |                |
 | value    | varchar(16384)      | YES  |     | NULL    |                |
-| log_time | datetime(3)         | YES  |     | NULL    |                |
+| log_time | datetime(9)         | YES  |     | NULL    |                |
 | span_id  | bigint(20) unsigned | NO   |     | NULL    |                |
 +----------+---------------------+------+-----+---------+----------------+
 
