@@ -17,7 +17,7 @@ type Tracer struct {
 
 func NewTracer(option TracerIdOption) *Tracer {
 	return &Tracer{
-		TraceId:   GenerateTraceId(option),
+		TraceId:   GlobalTraceIdGenerator.GenerateTraceId(option),
 		StartTime: time.Now(),
 	}
 }

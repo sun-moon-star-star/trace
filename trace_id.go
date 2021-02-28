@@ -22,37 +22,38 @@ var DefaultClockCallbackStrategy ClockCallbackStrategy = func(millis uint64, seq
 	return millis, seq + 1
 }
 
-type LastValueT struct {
-	MillisecondTimestamp uint64 // 41 bits
-	SequenceId           uint32 // 12 bits
+type TraceIdGenerator struct {
+	millisecondTimestamp uint64 // 41 bits
+	sequenceId           uint32 // 12 bits
 
 	ClockCallbackStrategy ClockCallbackStrategy
-	Lock                  sync.Mutex
+
+	lock sync.Mutex
 }
 
-var LastValue LastValueT = LastValueT{
+var GlobalTraceIdGenerator TraceIdGenerator = TraceIdGenerator{
 	ClockCallbackStrategy: DefaultClockCallbackStrategy,
 }
 
-func GenerateTraceId(option TracerIdOption) uint64 {
+func (g *TraceIdGenerator) GenerateTraceId(option TracerIdOption) uint64 {
 	millis := uint64(time.Now().UnixNano() / 1e6)
 	seq := uint32(0)
 
-	LastValue.Lock.Lock()
+	g.lock.Lock()
 
-	if millis > LastValue.MillisecondTimestamp {
-		LastValue.MillisecondTimestamp, LastValue.SequenceId = millis, 0
-	} else if millis == LastValue.MillisecondTimestamp {
-		LastValue.SequenceId++
-		seq = LastValue.SequenceId
+	if millis > g.millisecondTimestamp {
+		g.millisecondTimestamp, g.sequenceId = millis, 0
+	} else if millis == g.millisecondTimestamp {
+		g.sequenceId++
+		seq = g.sequenceId
 	} else {
 		// 时钟回拨
-		millis, seq = LastValue.ClockCallbackStrategy(
-			LastValue.MillisecondTimestamp, LastValue.SequenceId)
-		LastValue.MillisecondTimestamp, LastValue.SequenceId = millis, seq
+		millis, seq = g.ClockCallbackStrategy(
+			g.millisecondTimestamp, g.sequenceId)
+		g.millisecondTimestamp, g.sequenceId = millis, seq
 	}
 
-	LastValue.Lock.Unlock()
+	g.lock.Unlock()
 
 	traceId := millis << 22                   // 41-bit millisecond timestamp
 	traceId += uint64(option.ProjectId) << 12 // 10-bit projectId
