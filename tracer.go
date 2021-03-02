@@ -26,3 +26,10 @@ func (t *Tracer) End() {
 	t.EndTime = time.Now()
 	t.Stop = true
 }
+
+func (t *Tracer) NewSpanner() *Spanner {
+	s := NewSpanner()
+	s.TraceId = t.TraceId
+	s.TraceName = t.TraceName
+	return s
+}
