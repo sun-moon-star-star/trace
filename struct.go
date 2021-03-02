@@ -1,19 +1,22 @@
 package trace
 
 type Trace struct {
-	TraceId   uint64 `json:"id" gorm:"type:bigint(20) unsigned not null primaryKey;"`
+	TraceId   uint64 `json:"trace_id" gorm:"type:bigint(20) unsigned not null primaryKey;"`
 	TraceName string `json:"trace_name" gorm:"varchar(255)"`
 	StartTime string `json:"start_time" gorm:"datetime(6)"`
 	EndTime   string `json:"end_time" gorm:"datetime(6)"`
 	Summary   string `json:"summary" gorm:"varchar(4096)"`
+	Flags     uint64 `json:"flags" gorm:"type:int(11) unsigned"`
 }
 
 type Span struct {
 	SpanId    uint64 `json:"span_id" gorm:"type:bigint(20) unsigned not null primaryKey autoIncrement;"`
 	SpanName  string `json:"span_name" gorm:"varchar(255)"`
+	TraceId   uint64 `json:"trace_id" gorm:"type:bigint(20)"`
 	StartTime string `json:"start_time" gorm:"datetime(6)"`
 	EndTime   string `json:"end_time" gorm:"datetime(6)"`
-	TraceId   string `json:"trace_id" gorm:"varchar(32) not null"`
+	Summary   string `json:"summary" gorm:"varchar(4096)"`
+	Flags     uint64 `json:"flags" gorm:"type:int(11) unsigned"`
 }
 
 type SpanReference struct {

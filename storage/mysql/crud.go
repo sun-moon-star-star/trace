@@ -1,10 +1,9 @@
 package mysql
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
+	"trace"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
@@ -40,12 +39,12 @@ func getConnByDesc(db_desc string) (*gorm.DB, error) {
 }
 
 func getConn(params map[string]interface{}) (*gorm.DB, error) {
-	hostname := params["hostname"]
-	port := params["port"]
-	username := params["username"]
-	password := params["password"]
-	network := params["network"]
-	database := params["database"]
+	hostname := trace.GlobalConfig.Mysql.Hostname
+	port := trace.GlobalConfig.Mysql.Port
+	username := trace.GlobalConfig.Mysql.Username
+	password := trace.GlobalConfig.Mysql.Password
+	network := trace.GlobalConfig.Mysql.Network
+	database := trace.GlobalConfig.Mysql.Database
 
 	db_desc := fmt.Sprintf("%v:%v@%v(%v:%v)/%v", username, password, network, hostname, port, database)
 	return getConnByDesc(db_desc)
@@ -78,27 +77,25 @@ func LoadTables(params map[string]interface{}) ([]string, error) {
 
 }
 
-func SelectTableLimit(params map[string]interface{}) (interface{}, error) {
+func SelectTableLimit(params map[string]interface{}) error {
 	db, err := getConn(params)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	table := params["table"].(string)
+	table := params["table"]
+	data := params["data"]
 	num := params["num"]
+	where := params["where"]
 
-	data := GetTableArrayType(table)
-	if data == nil {
-		return nil, err
-	}
-	res := db.Table(table).Find(data).Limit(num)
+	res := db.Table(table).Where(where).Find(data).Limit(num)
 
 	if res.Error != nil {
-		return nil, res.Error
+		return res.Error
 	}
 
-	return data, nil
+	return nil
 }
 
 func UpdateTableField(params map[string]interface{}) error {
@@ -114,11 +111,6 @@ func UpdateTableField(params map[string]interface{}) error {
 	field := params["field"]
 	value := params["value"]
 
-	data := GetTableType(table)
-	if data == nil {
-		return errors.New("table not exists in table_reflect")
-	}
-
 	res := db.Table(table).Where(unique_field+" = ?", unique_field_value).Update(field, value)
 
 	return res.Error
@@ -132,14 +124,7 @@ func InsertTable(params map[string]interface{}) (interface{}, error) {
 	}
 
 	table := params["table"].(string)
-	object_jsonstr := params["object_jsonstr"].(string) // json string
-
-	data := GetTableType(table)
-	if data == nil {
-		return nil, errors.New("table not exists in table_reflect")
-	}
-
-	err = json.Unmarshal([]byte(object_jsonstr), data)
+	data := params["data"]
 
 	res := db.Table(table).Create(data)
 

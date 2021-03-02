@@ -4,11 +4,15 @@ import (
 	"time"
 )
 
+const (
+	FlagStop = iota
+)
+
 type Tracer struct {
 	TraceId   uint64
-	TraceName string // other key message
+	TraceName string
 
-	Stop      bool
+	Flags     uint64
 	StartTime time.Time
 	EndTime   time.Time
 
@@ -24,7 +28,7 @@ func NewTracer(option TracerIdOption) *Tracer {
 
 func (t *Tracer) End() {
 	t.EndTime = time.Now()
-	t.Stop = true
+	t.Flags |= FlagStop
 }
 
 func (t *Tracer) NewSpanner() *Spanner {
