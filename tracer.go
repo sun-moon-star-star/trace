@@ -34,6 +34,5 @@ func (t *Tracer) End() {
 func (t *Tracer) NewSpanner() *Spanner {
 	s := NewSpanner()
 	s.TraceId = t.TraceId
-	s.TraceName = t.TraceName
 	return s
 }

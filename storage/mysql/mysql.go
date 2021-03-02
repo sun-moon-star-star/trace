@@ -10,33 +10,29 @@ import (
 // 	SaveTracer(*trace.Tracer) error
 // 	LoadTracer(traceId string) (*trace.Tracer, error)
 // 	SaveSpanner(*trace.Spanner) error
+//  SaveSpannerWithChildren(*trace.Spanner) error
 // 	LoadSpanner(spanId uint64) (*trace.Spanner, error)
+//	LoadSpannerWithChildren(spanId uint64) (*trace.Spanner, error)
 // }
-
-const TIME_LAYOUT = "2006-01-02 15:04:05.000000"
 
 type Mysql struct{}
 
-const (
-	traceTableName = "trace"
-)
-
 func (mysql *Mysql) SaveTracer(tracer *trace.Tracer) error {
 	params := make(map[string]interface{})
-	trace := &trace.Trace{}
+	data := &trace.Trace{}
 
 	if tracer.TraceId == 0 {
 		return errors.New("tracer.TraceId must be setting")
 	}
 
-	trace.TraceId = tracer.TraceId
-	trace.TraceName = tracer.TraceName
-	trace.StartTime = tracer.StartTime.Format(TIME_LAYOUT)
-	trace.EndTime = tracer.EndTime.Format(TIME_LAYOUT)
-	trace.Summary = tracer.Summary
+	data.TraceId = tracer.TraceId
+	data.TraceName = tracer.TraceName
+	data.StartTime = tracer.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout)
+	data.EndTime = tracer.EndTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout)
+	data.Summary = tracer.Summary
 
-	params["table"] = traceTableName
-	params["data"] = trace
+	params["table"] = trace.GlobalConfig.Mysql.TraceTableName
+	params["data"] = data
 
 	_, err := InsertTable(params)
 	return err
@@ -49,7 +45,7 @@ func (mysql *Mysql) LoadTracer(tracer *trace.Tracer) (*trace.Tracer, error) {
 	where.TraceId = tracer.TraceId
 	where.TraceName = tracer.TraceName
 
-	params["table"] = traceTableName
+	params["table"] = trace.GlobalConfig.Mysql.TraceTableName
 	params["num"] = 1
 	params["where"] = where
 	params["data"] = data
@@ -59,12 +55,12 @@ func (mysql *Mysql) LoadTracer(tracer *trace.Tracer) (*trace.Tracer, error) {
 		return nil, err
 	}
 
-	startTime, err := time.Parse(TIME_LAYOUT, data.StartTime)
+	startTime, err := time.Parse(trace.GlobalConfig.Server.DefaultTimeLayout, data.StartTime)
 	if err != nil {
 		return nil, err
 	}
 
-	endTime, err := time.Parse(TIME_LAYOUT, data.EndTime)
+	endTime, err := time.Parse(trace.GlobalConfig.Server.DefaultTimeLayout, data.EndTime)
 	if err != nil {
 		return nil, err
 	}

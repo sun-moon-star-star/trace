@@ -8,16 +8,28 @@ import (
 )
 
 type Config struct {
-	Mysql Mysql `yaml:"mysql"`
+	Server Server `yaml:"server"`
+	Mysql  Mysql  `yaml:"mysql"`
+}
+
+type Server struct {
+	DefaultTimeLayout string `yaml:"default_time_layout"`
+	LogTimeLayout     string `yaml:"log_time_layout"`
+	BaggageTimeLayout string `yaml:"baggage_time_layout"`
 }
 
 type Mysql struct {
-	Hostname string `yaml:"hostname"`
-	Port     uint32 `yaml:"port"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Network  string `yaml:"network"`
-	Database string `yaml:"database"`
+	Hostname       string `yaml:"hostname"`
+	Port           uint32 `yaml:"port"`
+	Username       string `yaml:"username"`
+	Password       string `yaml:"password"`
+	Network        string `yaml:"network"`
+	Database       string `yaml:"database"`
+	TraceTableName string `yaml:"trace_table_name"`
+
+	ConnMaxLifeTime uint32 `yaml:"conn_max_life_time"`
+	MaxIdleConns    uint32 `yaml:"max_idle_conns"`
+	MaxOpenConns    uint32 `yaml:"max_open_conns"`
 }
 
 var GlobalConfig *Config
@@ -46,10 +58,23 @@ func loadConfig(filepath string) (*Config, error) {
 	return config, nil
 }
 
+func setDefault() {
+	if GlobalConfig.Server.DefaultTimeLayout == "" {
+		GlobalConfig.Server.DefaultTimeLayout = "2006-01-02 15:04:05.000000"
+	}
+	if GlobalConfig.Server.LogTimeLayout == "" {
+		GlobalConfig.Server.LogTimeLayout = GlobalConfig.Server.DefaultTimeLayout
+	}
+	if GlobalConfig.Server.BaggageTimeLayout == "" {
+		GlobalConfig.Server.BaggageTimeLayout = GlobalConfig.Server.DefaultTimeLayout
+	}
+}
+
 func init() {
 	var err error
 	GlobalConfig, err = loadConfig("./conf/server.yml")
 	if err != nil {
 		panic(err)
 	}
+	setDefault()
 }

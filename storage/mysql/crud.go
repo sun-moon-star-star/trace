@@ -30,9 +30,9 @@ func getConnByDesc(db_desc string) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db.DB().SetConnMaxLifetime(time.Duration(3600) * time.Second)
-	db.DB().SetMaxIdleConns(5)
-	db.DB().SetMaxOpenConns(10)
+	db.DB().SetConnMaxLifetime(time.Duration(trace.GlobalConfig.Mysql.ConnMaxLifeTime) * time.Second)
+	db.DB().SetMaxIdleConns(trace.GlobalConfig.Mysql.MaxIdleConns)
+	db.DB().SetMaxOpenConns(trace.GlobalConfig.Mysql.MaxOpenConns)
 
 	pool[db_desc] = db
 	return db, nil

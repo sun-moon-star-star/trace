@@ -18,7 +18,7 @@ type TestInfo struct {
 func TestSpan(t *testing.T) {
 	spanner := trace.NewSpanner()
 
-	spanner.FormatBaggageMapStrategy = func(maps trace.BaggageMap) string {
+	spanner.Strategy.Baggage = func(maps trace.BaggageMap) string {
 		var info string
 		for key, value := range maps {
 			info += fmt.Sprintf(" [%s(%s)->: %+v]", key, value.Time.Format("15:04:05.000000"), value.Value)
@@ -26,7 +26,6 @@ func TestSpan(t *testing.T) {
 		return info
 	}
 
-	spanner.TraceName = "trace_test"
 	spanner.SpanName = "span_test"
 
 	spanner.Tag("id", 123456789)
@@ -44,14 +43,14 @@ func TestSpan(t *testing.T) {
 
 	spanner.Baggage("data-access", "(0, ok)")
 
-	t.Log(spanner.FormatSpannerStrategy(spanner))
+	t.Log(spanner.Strategy.Spanner(spanner))
 
 	spanner.End()
 
-	t.Log(spanner.FormatTagMapStrategy(spanner.Tags))
-	t.Log(spanner.FormatLogMapStrategy(spanner.Logs))
-	t.Log(spanner.FormatBaggageMapStrategy(spanner.Baggages))
+	t.Log(spanner.Strategy.Tag(spanner.Tags))
+	t.Log(spanner.Strategy.Log(spanner.Logs))
+	t.Log(spanner.Strategy.Baggage(spanner.Baggages))
 
-	t.Log(spanner.FormatSpannerStrategy(spanner))
-	t.Log(spanner.FormatSpannerStrategy(spanner))
+	t.Log(spanner.Strategy.Spanner(spanner))
+	t.Log(spanner.Strategy.Spanner(spanner))
 }
