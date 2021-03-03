@@ -3,7 +3,6 @@ package trace
 import (
 	"sync"
 	"time"
-	"trace/random"
 )
 
 // 0-bit no use for extends
@@ -37,7 +36,7 @@ var GlobalUUIDGenerator UUIdGenerator = UUIdGenerator{
 
 func (g *UUIdGenerator) NewUUID() uint64 {
 	millis := uint64(time.Now().UnixNano() / 1e6)
-	seq := uint32(random.RandomUint12())
+	seq := uint32(0)
 
 	g.lock.Lock()
 
@@ -64,4 +63,12 @@ func (g *UUIdGenerator) NewUUID() uint64 {
 
 func NewUUID() uint64 {
 	return GlobalUUIDGenerator.NewUUID()
+}
+
+func TimestampFromUUID(uuid uint64) uint64 {
+	return uuid >> 22
+}
+
+func TimeFormatFromUUID(uuid uint64) string {
+	return time.Unix(int64(uuid>>22)/1e3, int64(uuid>>22)%1e3*1e6).Format("2006-01-02 15:04:05.000")
 }

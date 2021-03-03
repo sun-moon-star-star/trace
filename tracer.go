@@ -1,8 +1,6 @@
 package trace
 
-import (
-	"time"
-)
+import "time"
 
 const (
 	FlagStop = iota
@@ -12,9 +10,8 @@ type Tracer struct {
 	TraceId   uint64
 	TraceName string
 
-	Flags     uint64
-	StartTime time.Time
-	EndTime   time.Time
+	Flags        uint64
+	EndTimestamp uint64
 
 	Summary string
 
@@ -23,13 +20,12 @@ type Tracer struct {
 
 func NewTracer() *Tracer {
 	return &Tracer{
-		TraceId:   NewUUID(),
-		StartTime: time.Now(),
+		TraceId: NewUUID(),
 	}
 }
 
 func (t *Tracer) End() {
-	t.EndTime = time.Now()
+	t.EndTimestamp = uint64(time.Now().UnixNano() / 1e6)
 	t.Flags |= FlagStop
 }
 

@@ -17,10 +17,7 @@ type TraceId struct {
 }
 
 type Server struct {
-	TraceId           TraceId `yaml:"trace_id"`
-	DefaultTimeLayout string  `yaml:"default_time_layout"`
-	LogTimeLayout     string  `yaml:"log_time_layout"`
-	BaggageTimeLayout string  `yaml:"baggage_time_layout"`
+	TraceId TraceId `yaml:"trace_id"`
 }
 
 type Mysql struct {
@@ -69,16 +66,7 @@ func loadConfig(filepath string) (*ConfigT, error) {
 }
 
 func setDefault() {
-	if Config.Server.DefaultTimeLayout == "" {
-		Config.Server.DefaultTimeLayout = "2006-01-02 15:04:05.000000"
-	}
-	if Config.Server.LogTimeLayout == "" {
-		Config.Server.LogTimeLayout = Config.Server.DefaultTimeLayout
-	}
-	if Config.Server.BaggageTimeLayout == "" {
-		Config.Server.BaggageTimeLayout = Config.Server.DefaultTimeLayout
-	}
-
+	// projectId必须单实例唯一
 	GlobalUUIDGenerator.projectId = Config.Server.TraceId.ProjectId
 }
 

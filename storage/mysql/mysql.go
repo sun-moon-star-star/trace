@@ -53,7 +53,7 @@ func setDB() (err error) {
 	return nil
 }
 
-func (mysql *Mysql) LoadTags(SpanId uint64) (tags trace.TagMap, err error) {
+func (mysql *Mysql) LoadTags(SpanId uint64) (tags trace.SpanMap, err error) {
 	if err = setDB(); err != nil {
 		return nil, err
 	}
@@ -67,15 +67,18 @@ func (mysql *Mysql) LoadTags(SpanId uint64) (tags trace.TagMap, err error) {
 		return nil, res.Error
 	}
 
-	tags = make(trace.TagMap)
+	tags = make(trace.SpanMap)
 	for _, tag := range tags_data {
-		tags[tag.Field] = tag.Value
+		tags[tag.Field] = trace.ValueInfo{
+			Id:    tag.TagId,
+			Value: tag.Value,
+		}
 	}
 
 	return
 }
 
-func (mysql *Mysql) LoadLogs(SpanId uint64) (logs trace.LogMap, err error) {
+func (mysql *Mysql) LoadLogs(SpanId uint64) (logs trace.SpanMap, err error) {
 	if err = setDB(); err != nil {
 		return nil, err
 	}
@@ -89,13 +92,10 @@ func (mysql *Mysql) LoadLogs(SpanId uint64) (logs trace.LogMap, err error) {
 		return nil, res.Error
 	}
 
-	logs = make(trace.LogMap)
+	logs = make(trace.SpanMap)
 	for _, log := range logs_data {
-		log_time, _ := time.Parse(
-			trace.Config.Server.DefaultTimeLayout, log.Time)
-
-		logs[log.Field] = trace.ValueWithTime{
-			Time:  log_time,
+		logs[log.Field] = trace.ValueInfo{
+			Id:    log.LogId,
 			Value: log.Value,
 		}
 	}
@@ -103,7 +103,7 @@ func (mysql *Mysql) LoadLogs(SpanId uint64) (logs trace.LogMap, err error) {
 	return
 }
 
-func (mysql *Mysql) LoadBaggages(SpanId uint64) (baggages trace.BaggageMap, err error) {
+func (mysql *Mysql) LoadBaggages(SpanId uint64) (baggages trace.SpanMap, err error) {
 	if err = setDB(); err != nil {
 		return nil, err
 	}
@@ -117,13 +117,10 @@ func (mysql *Mysql) LoadBaggages(SpanId uint64) (baggages trace.BaggageMap, err 
 		return nil, res.Error
 	}
 
-	baggages = make(trace.BaggageMap)
+	baggages = make(trace.SpanMap)
 	for _, baggage := range baggages_data {
-		baggage_time, _ := time.Parse(
-			trace.Config.Server.DefaultTimeLayout, baggage.Time)
-
-		baggages[baggage.Field] = trace.ValueWithTime{
-			Time:  baggage_time,
+		baggages[baggage.Field] = trace.ValueInfo{
+			Id:    baggage.BaggageId,
 			Value: baggage.Value,
 		}
 	}
@@ -141,11 +138,10 @@ func (mysql *Mysql) SaveTracer(tracer *trace.Tracer) (err error) {
 	}
 
 	res := db.Table(trace.Config.Mysql.TraceTableName).Create(&trace.Trace{
-		TraceId:   tracer.TraceId,
-		TraceName: tracer.TraceName,
-		StartTime: tracer.StartTime.Format(trace.Config.Server.DefaultTimeLayout),
-		EndTime:   tracer.EndTime.Format(trace.Config.Server.DefaultTimeLayout),
-		Summary:   tracer.Summary,
+		TraceId:      tracer.TraceId,
+		TraceName:    tracer.TraceName,
+		EndTimestamp: tracer.EndTimestamp,
+		Summary:      tracer.Summary,
 	})
 
 	if res.Error != nil {
@@ -175,18 +171,7 @@ func (mysql *Mysql) LoadTracer(tracer *trace.Tracer) (err error) {
 	tracer.TraceName = trace_data.TraceName
 	tracer.Flags = trace_data.Flags
 	tracer.Summary = trace_data.Summary
-
-	startTime, err := time.Parse(
-		trace.Config.Server.DefaultTimeLayout, trace_data.StartTime)
-	if err == nil {
-		tracer.StartTime = startTime
-	}
-
-	endTime, err := time.Parse(
-		trace.Config.Server.DefaultTimeLayout, trace_data.EndTime)
-	if err != nil {
-		tracer.EndTime = endTime
-	}
+	tracer.EndTimestamp = trace_data.EndTimestamp
 
 	tracer.First = &trace.Spanner{
 		TraceId: trace_data.TraceId,
@@ -224,8 +209,7 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 		ParentSpanId: spanner.ParentSpanId,
 		SpanName:     spanner.SpanName,
 		TraceId:      spanner.TraceId,
-		StartTime:    spanner.StartTime.Format(trace.Config.Server.DefaultTimeLayout),
-		EndTime:      spanner.StartTime.Format(trace.Config.Server.DefaultTimeLayout),
+		EndTimestamp: spanner.EndTimestamp,
 		Summary:      spanner.Summary,
 		Flags:        spanner.Flags,
 	}
@@ -240,9 +224,10 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 	// Insert Tag
 	for key, value := range spanner.Tags {
 		res := tx.Table(trace.Config.Mysql.TagTableName).Create(&trace.Tag{
+			TagId:  value.Id,
 			SpanId: spanner.SpanId,
 			Field:  key,
-			Value:  fmt.Sprintf("%+v", value),
+			Value:  fmt.Sprintf("%+v", value.Value),
 		})
 
 		if res.Error != nil {
@@ -254,10 +239,10 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 	// Insert Log
 	for key, value := range spanner.Logs {
 		res := tx.Table(trace.Config.Mysql.LogTableName).Create(&trace.Log{
+			LogId:  value.Id,
 			SpanId: spanner.SpanId,
 			Field:  key,
 			Value:  fmt.Sprintf("%+v", value.Value),
-			Time:   value.Time.Format(trace.Config.Server.LogTimeLayout),
 		})
 
 		if res.Error != nil {
@@ -269,10 +254,10 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 	// Insert Baggage
 	for key, value := range spanner.Baggages {
 		res := tx.Table(trace.Config.Mysql.BaggageTableName).Create(&trace.Baggage{
-			SpanId: spanner.SpanId,
-			Field:  key,
-			Value:  fmt.Sprintf("%+v", value.Value),
-			Time:   value.Time.Format(trace.Config.Server.LogTimeLayout),
+			BaggageId: value.Id,
+			SpanId:    spanner.SpanId,
+			Field:     key,
+			Value:     fmt.Sprintf("%+v", value.Value),
 		})
 
 		if res.Error != nil {
@@ -309,24 +294,10 @@ func (mysql *Mysql) LoadSpanner(spanner *trace.Spanner) error {
 	spanner.TraceId = span_data.TraceId
 	spanner.Summary = span_data.Summary
 	spanner.Flags = span_data.Flags
+	spanner.EndTimestamp = span_data.EndTimestamp
 
 	var errors []string
-
-	startTime, err := time.Parse(
-		trace.Config.Server.DefaultTimeLayout, span_data.StartTime)
-	if err == nil {
-		spanner.StartTime = startTime
-	} else {
-		errors = append(errors, err.Error())
-	}
-
-	endTime, err := time.Parse(
-		trace.Config.Server.DefaultTimeLayout, span_data.EndTime)
-	if err == nil {
-		spanner.EndTime = endTime
-	} else {
-		errors = append(errors, err.Error())
-	}
+	var err error
 
 	spanner.Tags, err = mysql.LoadTags(span_data.SpanId)
 	if err != nil {

@@ -18,10 +18,10 @@ type TestInfo struct {
 func TestSpan(t *testing.T) {
 	spanner := trace.NewSpanner()
 
-	spanner.Strategy.Baggage = func(maps trace.BaggageMap) string {
+	spanner.Strategy.Baggage = func(maps trace.SpanMap) string {
 		var info string
 		for key, value := range maps {
-			info += fmt.Sprintf(" [%s(%s)->: %+v]", key, value.Time.Format("15:04:05.000000"), value.Value)
+			info += fmt.Sprintf(" [%s(%s)->: %+v]", key, trace.TimeFormatFromUUID(value.Id), value.Value)
 		}
 		return info
 	}

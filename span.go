@@ -5,21 +5,18 @@ import (
 	"time"
 )
 
-type TagMap map[string]interface{}
+type SpanMap map[string]ValueInfo
 
-type ValueWithTime struct {
-	Time  time.Time
+type ValueInfo struct {
+	Id    uint64
 	Value interface{}
 }
 
-type LogMap map[string]ValueWithTime
-type BaggageMap map[string]ValueWithTime
-
 type Strategy struct {
 	// Output Format
-	Tag     func(maps TagMap) string
-	Log     func(maps LogMap) string
-	Baggage func(maps BaggageMap) string
+	Tag     func(SpanMap) string
+	Log     func(SpanMap) string
+	Baggage func(SpanMap) string
 	// Output Format
 	Spanner func(*Spanner) string
 	// Generate Summary To Save
@@ -30,24 +27,24 @@ var DefaultStrategy *Strategy
 
 func init() {
 	DefaultStrategy = &Strategy{
-		Tag: func(maps TagMap) string {
+		Tag: func(maps SpanMap) string {
 			var info string
 			for key, value := range maps {
-				info += fmt.Sprintf(" [%s: %+v]", key, value)
+				info += fmt.Sprintf(" [%s(%s): %+v]", key, TimeFormatFromUUID(value.Id), value.Value)
 			}
 			return info
 		},
-		Log: func(maps LogMap) string {
+		Log: func(maps SpanMap) string {
 			var info string
 			for key, value := range maps {
-				info += fmt.Sprintf(" [%s(%s): %+v]", key, value.Time.Format(Config.Server.LogTimeLayout), value.Value)
+				info += fmt.Sprintf(" [%s(%s): %+v]", key, TimeFormatFromUUID(value.Id), value.Value)
 			}
 			return info
 		},
-		Baggage: func(maps BaggageMap) string {
+		Baggage: func(maps SpanMap) string {
 			var info string
 			for key, value := range maps {
-				info += fmt.Sprintf(" [%s(%s): %+v]", key, value.Time.Format(Config.Server.BaggageTimeLayout), value.Value)
+				info += fmt.Sprintf(" [%s(%s): %+v]", key, TimeFormatFromUUID(value.Id), value.Value)
 			}
 			return info
 		},
@@ -56,12 +53,12 @@ func init() {
 
 			if s.Flags&SpannerStop > 0 {
 				info = fmt.Sprintf("[%s, %s]",
-					s.StartTime.Format(Config.Server.DefaultTimeLayout),
-					s.EndTime.Format(Config.Server.DefaultTimeLayout))
+					TimeFormatFromUUID(s.SpanId),
+					time.Unix(int64(s.EndTimestamp)/1e3, int64(s.EndTimestamp)%1e3*1e6).Format("2006-01-02 15:04:05.000"))
 			} else {
 				info = fmt.Sprintf("[%s, %s]",
-					s.StartTime.Format(Config.Server.DefaultTimeLayout),
-					time.Now().Format(Config.Server.DefaultTimeLayout))
+					TimeFormatFromUUID(s.SpanId),
+					time.Now().Format("2006-01-02 15:04:05.000"))
 			}
 
 			info += fmt.Sprintf(" [TraceId: %d] [SpanId: %d] [SpanName: %s]",
@@ -90,15 +87,14 @@ type Spanner struct {
 	TraceId      uint64
 	ParentSpanId uint64
 
-	Flags     uint64
-	StartTime time.Time
-	EndTime   time.Time
+	Flags        uint64
+	EndTimestamp uint64
 
 	Summary string
 
-	Tags     TagMap
-	Logs     LogMap
-	Baggages BaggageMap
+	Tags     SpanMap
+	Logs     SpanMap
+	Baggages SpanMap
 
 	Strategy *Strategy `json:"-"`
 
@@ -109,36 +105,38 @@ type Spanner struct {
 
 func NewSpanner() *Spanner {
 	return &Spanner{
-		SpanId:    NewUUID(),
-		StartTime: time.Now(),
+		SpanId: NewUUID(),
 
-		Tags:     make(TagMap),
-		Logs:     make(LogMap),
-		Baggages: make(BaggageMap),
+		Tags:     make(SpanMap),
+		Logs:     make(SpanMap),
+		Baggages: make(SpanMap),
 
 		Strategy: DefaultStrategy,
 	}
 }
 
 func (s *Spanner) End() {
-	s.EndTime = time.Now()
+	s.EndTimestamp = uint64(time.Now().UnixNano() / 1e6)
 	s.Flags |= SpannerStop
 }
 
 func (s *Spanner) Tag(key string, value interface{}) {
-	s.Tags[key] = value
+	s.Tags[key] = ValueInfo{
+		Id:    NewUUID(),
+		Value: value,
+	}
 }
 
 func (s *Spanner) Log(key string, value interface{}) {
-	s.Logs[key] = ValueWithTime{
-		Time:  time.Now(),
+	s.Logs[key] = ValueInfo{
+		Id:    NewUUID(),
 		Value: value,
 	}
 }
 
 func (s *Spanner) Baggage(key string, value interface{}) {
-	s.Baggages[key] = ValueWithTime{
-		Time:  time.Now(),
+	s.Baggages[key] = ValueInfo{
+		Id:    NewUUID(),
 		Value: value,
 	}
 }
