@@ -3,84 +3,204 @@ package mysql
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 	"trace"
+
+	"github.com/jinzhu/gorm"
 )
 
-// type API interface {
-// 	SaveTracer(*trace.Tracer) error
-// 	LoadTracer(traceId string) (*trace.Tracer, error)
-// 	SaveSpanner(*trace.Spanner) error
-//  SaveSpannerWithChildren(*trace.Spanner) error
-// 	LoadSpanner(spanId uint64) (*trace.Spanner, error)
-//	LoadSpannerWithChildren(spanId uint64) (*trace.Spanner, error)
-// }
+var db *gorm.DB
 
 type Mysql struct{}
 
-func (mysql *Mysql) SaveTracer(tracer *trace.Tracer) error {
+func setDB() (err error) {
+	if db != nil {
+		if err = db.DB().Ping(); err == nil {
+			return nil
+		}
+		db.DB().Close()
+		db = nil
+	}
+
+	hostname := trace.GlobalConfig.Mysql.Hostname
+	port := trace.GlobalConfig.Mysql.Port
+	username := trace.GlobalConfig.Mysql.Username
+	password := trace.GlobalConfig.Mysql.Password
+	network := trace.GlobalConfig.Mysql.Network
+	database := trace.GlobalConfig.Mysql.Database
+
+	db_desc := fmt.Sprintf("%v:%v@%v(%v:%v)/%v",
+		username, password, network, hostname, port, database)
+
+	db, err = gorm.Open("mysql", db_desc)
+	if err != nil {
+		return err
+	}
+
+	err = db.DB().Ping()
+	if err != nil {
+		return err
+	}
+
+	db.DB().SetConnMaxLifetime(
+		time.Duration(trace.GlobalConfig.Mysql.ConnMaxLifeTime) * time.Second)
+	db.DB().SetMaxIdleConns(trace.GlobalConfig.Mysql.MaxIdleConns)
+	db.DB().SetMaxOpenConns(trace.GlobalConfig.Mysql.MaxOpenConns)
+
+	return nil
+}
+
+func (mysql *Mysql) LoadTags(SpanId uint64) (tags trace.TagMap, err error) {
+	if err = setDB(); err != nil {
+		return nil, err
+	}
+
+	var tags_data []trace.Tag
+	res := db.Table(trace.GlobalConfig.Mysql.TagTableName).Where(&trace.Tag{
+		SpanId: SpanId,
+	}).Find(&tags_data)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	tags = make(trace.TagMap)
+	for _, tag := range tags_data {
+		tags[tag.Field] = tag.Value
+	}
+
+	return
+}
+
+func (mysql *Mysql) LoadLogs(SpanId uint64) (logs trace.LogMap, err error) {
+	if err = setDB(); err != nil {
+		return nil, err
+	}
+
+	var logs_data []trace.Log
+	res := db.Table(trace.GlobalConfig.Mysql.LogTableName).Where(&trace.Log{
+		SpanId: SpanId,
+	}).Find(&logs_data)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	logs = make(trace.LogMap)
+	for _, log := range logs_data {
+		log_time, _ := time.Parse(
+			trace.GlobalConfig.Server.DefaultTimeLayout, log.Time)
+
+		logs[log.Field] = trace.ValueWithTime{
+			Time:  log_time,
+			Value: log.Value,
+		}
+	}
+
+	return
+}
+
+func (mysql *Mysql) LoadBaggages(SpanId uint64) (baggages trace.BaggageMap, err error) {
+	if err = setDB(); err != nil {
+		return nil, err
+	}
+
+	var baggages_data []trace.Baggage
+	res := db.Table(trace.GlobalConfig.Mysql.BaggageTableName).Where(&trace.Baggage{
+		SpanId: SpanId,
+	}).Find(&baggages_data)
+
+	if res.Error != nil {
+		return nil, res.Error
+	}
+
+	baggages = make(trace.BaggageMap)
+	for _, baggage := range baggages_data {
+		baggage_time, _ := time.Parse(
+			trace.GlobalConfig.Server.DefaultTimeLayout, baggage.Time)
+
+		baggages[baggage.Field] = trace.ValueWithTime{
+			Time:  baggage_time,
+			Value: baggage.Value,
+		}
+	}
+
+	return
+}
+
+func (mysql *Mysql) SaveTracer(tracer *trace.Tracer) (err error) {
 	if tracer.TraceId == 0 {
 		return errors.New("trace.Tracer.TraceId must be setting")
 	}
 
-	params := map[string]interface{}{
-		"table": trace.GlobalConfig.Mysql.TraceTableName,
-		"data": &trace.Trace{
-			TraceId:   tracer.TraceId,
-			TraceName: tracer.TraceName,
-			StartTime: tracer.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
-			EndTime:   tracer.EndTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
-			Summary:   tracer.Summary,
-		},
+	if err = setDB(); err != nil {
+		return err
 	}
 
-	_, err := InsertTable(params)
-	return err
+	res := db.Table(trace.GlobalConfig.Mysql.TraceTableName).Create(&trace.Trace{
+		TraceId:   tracer.TraceId,
+		TraceName: tracer.TraceName,
+		StartTime: tracer.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+		EndTime:   tracer.EndTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+		Summary:   tracer.Summary,
+	})
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	return nil
 }
 
-func (mysql *Mysql) LoadTracer(tracer *trace.Tracer) (*trace.Tracer, error) {
-	params := make(map[string]interface{})
-	where, data := &trace.Trace{}, &trace.Trace{}
+func (mysql *Mysql) LoadTracer(tracer *trace.Tracer) (err error) {
+	if err = setDB(); err != nil {
+		return err
+	}
 
-	where.TraceId = tracer.TraceId
-	where.TraceName = tracer.TraceName
+	trace_data := &trace.Trace{}
 
-	params["table"] = trace.GlobalConfig.Mysql.TraceTableName
-	params["num"] = 1
-	params["where"] = where
-	params["data"] = data
+	res := db.Table(trace.GlobalConfig.Mysql.TraceTableName).Where(&trace.Trace{
+		TraceId:   tracer.TraceId,
+		TraceName: tracer.TraceName,
+	}).Find(trace_data).Limit(1)
 
-	err := SelectTableLimit(params)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	tracer.TraceId = trace_data.TraceId
+	tracer.TraceName = trace_data.TraceName
+	tracer.Flags = trace_data.Flags
+	tracer.Summary = trace_data.Summary
+
+	startTime, err := time.Parse(
+		trace.GlobalConfig.Server.DefaultTimeLayout, trace_data.StartTime)
+	if err == nil {
+		tracer.StartTime = startTime
+	}
+
+	endTime, err := time.Parse(
+		trace.GlobalConfig.Server.DefaultTimeLayout, trace_data.EndTime)
 	if err != nil {
-		return nil, err
+		tracer.EndTime = endTime
 	}
 
-	startTime, err := time.Parse(trace.GlobalConfig.Server.DefaultTimeLayout, data.StartTime)
-	if err != nil {
-		return nil, err
+	tracer.First = &trace.Spanner{
+		TraceId: trace_data.TraceId,
 	}
 
-	endTime, err := time.Parse(trace.GlobalConfig.Server.DefaultTimeLayout, data.EndTime)
-	if err != nil {
-		return nil, err
-	}
-
-	res := &trace.Tracer{
-		TraceId:   data.TraceId,
-		TraceName: data.TraceName,
-
-		Flags:     data.Flags,
-		StartTime: startTime,
-		EndTime:   endTime,
-		Summary:   data.Summary,
-	}
-
-	return res, nil
+	return mysql.LoadSpanner(tracer.First)
 }
 
-func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) error {
+func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 	if spanner.TraceId == 0 {
 		return errors.New("trace.Spanner.TraceId must be setting")
+	}
+
+	if err = setDB(); err != nil {
+		return err
 	}
 
 	// InsertSpan
@@ -88,21 +208,22 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) error {
 		spanner.Summary = spanner.Strategy.Summary(spanner)
 	}
 
-	_, err := InsertTable(map[string]interface{}{
-		"table": trace.GlobalConfig.Mysql.SpanTableName,
-		"data": &trace.Span{
-			SpanId:       spanner.SpanId,
-			ParentSpanId: spanner.ParentSpanId,
-			SpanName:     spanner.SpanName,
-			TraceId:      spanner.TraceId,
-			StartTime:    spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
-			EndTime:      spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
-			Summary:      spanner.Summary,
-			Flags:        spanner.Flags,
-		},
+	tx := db.Begin()
+
+	res := tx.Table(trace.GlobalConfig.Mysql.SpanTableName).Create(&trace.Span{
+		SpanId:       spanner.SpanId,
+		ParentSpanId: spanner.ParentSpanId,
+		SpanName:     spanner.SpanName,
+		TraceId:      spanner.TraceId,
+		StartTime:    spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+		EndTime:      spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+		Summary:      spanner.Summary,
+		Flags:        spanner.Flags,
 	})
-	if err != nil {
-		return err
+
+	if res.Error != nil {
+		db.Rollback()
+		return res.Error
 	}
 
 	// Insert Tag
@@ -122,12 +243,10 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) error {
 		index++
 	}
 
-	_, err = InsertTable(map[string]interface{}{
-		"table": trace.GlobalConfig.Mysql.TagTableName,
-		"data":  &tags,
-	})
-	if err != nil {
-		return err
+	res = tx.Table(trace.GlobalConfig.Mysql.TagTableName).Create(&tags)
+	if res.Error != nil {
+		db.Rollback()
+		return res.Error
 	}
 
 	// Insert Log
@@ -148,12 +267,10 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) error {
 		index++
 	}
 
-	_, err = InsertTable(map[string]interface{}{
-		"table": trace.GlobalConfig.Mysql.LogTableName,
-		"data":  &logs,
-	})
-	if err != nil {
-		return err
+	res = tx.Table(trace.GlobalConfig.Mysql.LogTableName).Create(&logs)
+	if res.Error != nil {
+		db.Rollback()
+		return res.Error
 	}
 
 	// Insert Baggage
@@ -174,10 +291,76 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) error {
 		index++
 	}
 
-	_, err = InsertTable(map[string]interface{}{
-		"table": trace.GlobalConfig.Mysql.LogTableName,
-		"data":  &baggages,
-	})
+	res = tx.Table(trace.GlobalConfig.Mysql.BaggageTableName).Create(&baggages)
+	if res.Error != nil {
+		db.Rollback()
+		return res.Error
+	}
 
-	return err
+	db.Commit()
+	return nil
+}
+
+func (mysql *Mysql) LoadSpanner(spanner *trace.Spanner) error {
+	if err := setDB(); err != nil {
+		return err
+	}
+
+	span_data := &trace.Span{}
+
+	res := db.Table(trace.GlobalConfig.Mysql.SpanTableName).Where(&trace.Span{
+		SpanId:       spanner.SpanId,
+		ParentSpanId: spanner.ParentSpanId,
+		SpanName:     spanner.SpanName,
+		TraceId:      spanner.TraceId,
+	}).Find(span_data).Order("span_id").Limit(1)
+
+	if res.Error != nil {
+		return res.Error
+	}
+
+	spanner.SpanId = span_data.SpanId
+	spanner.ParentSpanId = span_data.ParentSpanId
+	spanner.SpanName = span_data.SpanName
+	spanner.TraceId = span_data.TraceId
+	spanner.Summary = span_data.Summary
+	spanner.Flags = span_data.Flags
+
+	var errors []string
+
+	startTime, err := time.Parse(
+		trace.GlobalConfig.Server.DefaultTimeLayout, span_data.StartTime)
+	if err == nil {
+		spanner.StartTime = startTime
+	} else {
+		errors = append(errors, err.Error())
+	}
+
+	endTime, err := time.Parse(
+		trace.GlobalConfig.Server.DefaultTimeLayout, span_data.EndTime)
+	if err == nil {
+		spanner.EndTime = endTime
+	} else {
+		errors = append(errors, err.Error())
+	}
+
+	spanner.Tags, err = mysql.LoadTags(span_data.SpanId)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	spanner.Logs, err = mysql.LoadLogs(span_data.SpanId)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	spanner.Baggages, err = mysql.LoadBaggages(span_data.SpanId)
+	if err != nil {
+		errors = append(errors, err.Error())
+	}
+
+	if len(errors) == 0 {
+		return nil
+	}
+	return fmt.Errorf(strings.Join(errors, "\n"))
 }

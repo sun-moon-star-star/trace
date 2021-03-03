@@ -6,18 +6,18 @@ type Trace struct {
 	StartTime string `json:"start_time" gorm:"datetime(6)"`
 	EndTime   string `json:"end_time" gorm:"datetime(6)"`
 	Summary   string `json:"summary" gorm:"varchar(4096)"`
-	Flags     uint64 `json:"flags" gorm:"type:int(11) unsigned"`
+	Flags     uint64 `json:"flags" gorm:"type:bigint(20) unsigned"`
 }
 
 type Span struct {
 	SpanId       uint64 `json:"span_id" gorm:"type:bigint(20) unsigned not null primaryKey autoIncrement;"`
 	ParentSpanId uint64 `json:"parent_span_id" gorm:"type:bigint(20) unsigned not null;"`
 	SpanName     string `json:"span_name" gorm:"varchar(255)"`
-	TraceId      uint64 `json:"trace_id" gorm:"type:bigint(20)"`
+	TraceId      uint64 `json:"trace_id" gorm:"type:bigint(20) unsigned not null"`
 	StartTime    string `json:"start_time" gorm:"datetime(6)"`
 	EndTime      string `json:"end_time" gorm:"datetime(6)"`
 	Summary      string `json:"summary" gorm:"varchar(4096)"`
-	Flags        uint64 `json:"flags" gorm:"type:int(11) unsigned"`
+	Flags        uint64 `json:"flags" gorm:"type:bigint(20) unsigned"`
 }
 
 type Tag struct {

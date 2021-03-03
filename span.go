@@ -81,7 +81,7 @@ func init() {
 
 const (
 	SpannerStop = 1 << (iota)
-	SpanType    // not set => ChildOf, set => FollowsFrom
+	SpanType    // not set => FollowsFrom, set => ChildOf
 )
 
 type Spanner struct {

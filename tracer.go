@@ -17,6 +17,8 @@ type Tracer struct {
 	EndTime   time.Time
 
 	Summary string
+
+	First *Spanner
 }
 
 func NewTracer(option TracerIdOption) *Tracer {
@@ -34,5 +36,10 @@ func (t *Tracer) End() {
 func (t *Tracer) NewSpanner() *Spanner {
 	s := NewSpanner()
 	s.TraceId = t.TraceId
+
+	if t.First == nil {
+		t.First = s
+	}
+
 	return s
 }
