@@ -21,9 +21,9 @@ type Tracer struct {
 	First *Spanner
 }
 
-func NewTracer(option TracerIdOption) *Tracer {
+func NewTracer() *Tracer {
 	return &Tracer{
-		TraceId:   GlobalTraceIdGenerator.GenerateTraceId(option),
+		TraceId:   NewUUID(),
 		StartTime: time.Now(),
 	}
 }

@@ -7,15 +7,20 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
+type ConfigT struct {
 	Server Server `yaml:"server"`
 	Mysql  Mysql  `yaml:"mysql"`
 }
 
+type TraceId struct {
+	ProjectId uint64 `yaml:"project_id"`
+}
+
 type Server struct {
-	DefaultTimeLayout string `yaml:"default_time_layout"`
-	LogTimeLayout     string `yaml:"log_time_layout"`
-	BaggageTimeLayout string `yaml:"baggage_time_layout"`
+	TraceId           TraceId `yaml:"trace_id"`
+	DefaultTimeLayout string  `yaml:"default_time_layout"`
+	LogTimeLayout     string  `yaml:"log_time_layout"`
+	BaggageTimeLayout string  `yaml:"baggage_time_layout"`
 }
 
 type Mysql struct {
@@ -37,9 +42,9 @@ type Mysql struct {
 	MaxOpenConns    int    `yaml:"max_open_conns"`
 }
 
-var GlobalConfig *Config
+var Config *ConfigT
 
-func loadConfig(filepath string) (*Config, error) {
+func loadConfig(filepath string) (*ConfigT, error) {
 	file, err := os.Open(filepath)
 
 	if err != nil {
@@ -53,7 +58,7 @@ func loadConfig(filepath string) (*Config, error) {
 		return nil, err
 	}
 
-	config := &Config{}
+	config := &ConfigT{}
 	err = yaml.Unmarshal(bytes, config)
 
 	if err != nil {
@@ -64,20 +69,22 @@ func loadConfig(filepath string) (*Config, error) {
 }
 
 func setDefault() {
-	if GlobalConfig.Server.DefaultTimeLayout == "" {
-		GlobalConfig.Server.DefaultTimeLayout = "2006-01-02 15:04:05.000000"
+	if Config.Server.DefaultTimeLayout == "" {
+		Config.Server.DefaultTimeLayout = "2006-01-02 15:04:05.000000"
 	}
-	if GlobalConfig.Server.LogTimeLayout == "" {
-		GlobalConfig.Server.LogTimeLayout = GlobalConfig.Server.DefaultTimeLayout
+	if Config.Server.LogTimeLayout == "" {
+		Config.Server.LogTimeLayout = Config.Server.DefaultTimeLayout
 	}
-	if GlobalConfig.Server.BaggageTimeLayout == "" {
-		GlobalConfig.Server.BaggageTimeLayout = GlobalConfig.Server.DefaultTimeLayout
+	if Config.Server.BaggageTimeLayout == "" {
+		Config.Server.BaggageTimeLayout = Config.Server.DefaultTimeLayout
 	}
+
+	GlobalUUIDGenerator.projectId = Config.Server.TraceId.ProjectId
 }
 
 func init() {
 	var err error
-	GlobalConfig, err = loadConfig("/Users/lurongming/sun-moon-star-star/trace/conf/server.yml")
+	Config, err = loadConfig("/Users/lurongming/sun-moon-star-star/trace/conf/server.yml")
 	if err != nil {
 		panic(err)
 	}

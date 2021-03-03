@@ -15,7 +15,7 @@ func TestMysql(t *testing.T) {
 
 	var err error
 
-	tracer := trace.NewTracer(trace.TracerIdOption{ProjectId: 993})
+	tracer := trace.NewTracer()
 	tracer.TraceName, err = random.RandomUUID()
 
 	if err != nil {
