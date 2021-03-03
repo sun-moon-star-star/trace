@@ -100,11 +100,11 @@ type Spanner struct {
 	Logs     LogMap
 	Baggages BaggageMap
 
-	Strategy *Strategy
+	Strategy *Strategy `json:"-"`
 
-	Father   *Spanner
-	Children *Spanner
-	Next     *Spanner
+	Father   *Spanner `json:"-"`
+	Children *Spanner `json:"-"`
+	Next     *Spanner `json:"-"`
 }
 
 func NewSpanner() *Spanner {

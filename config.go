@@ -33,8 +33,8 @@ type Mysql struct {
 	BaggageTableName string `yaml:"baggage_table_name"`
 
 	ConnMaxLifeTime uint32 `yaml:"conn_max_life_time"`
-	MaxIdleConns    uint32 `yaml:"max_idle_conns"`
-	MaxOpenConns    uint32 `yaml:"max_open_conns"`
+	MaxIdleConns    int    `yaml:"max_idle_conns"`
+	MaxOpenConns    int    `yaml:"max_open_conns"`
 }
 
 var GlobalConfig *Config
@@ -77,7 +77,7 @@ func setDefault() {
 
 func init() {
 	var err error
-	GlobalConfig, err = loadConfig("./conf/server.yml")
+	GlobalConfig, err = loadConfig("/Users/lurongming/sun-moon-star-star/trace/conf/server.yml")
 	if err != nil {
 		panic(err)
 	}

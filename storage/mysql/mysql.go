@@ -1,12 +1,13 @@
 package mysql
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 	"trace"
+
+	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/jinzhu/gorm"
 )
@@ -208,9 +209,17 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 		spanner.Summary = spanner.Strategy.Summary(spanner)
 	}
 
+	if spanner.SpanId == 0 {
+		spanner.SpanId = trace.GlobalTraceIdGenerator.GenerateTraceId(trace.TracerIdOption{ProjectId: 993})
+	}
+
+	if spanner.ParentSpanId == 0 {
+		spanner.ParentSpanId = spanner.SpanId
+	}
+
 	tx := db.Begin()
 
-	res := tx.Table(trace.GlobalConfig.Mysql.SpanTableName).Create(&trace.Span{
+	trace_data := &trace.Span{
 		SpanId:       spanner.SpanId,
 		ParentSpanId: spanner.ParentSpanId,
 		SpanName:     spanner.SpanName,
@@ -219,85 +228,60 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 		EndTime:      spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
 		Summary:      spanner.Summary,
 		Flags:        spanner.Flags,
-	})
+	}
+
+	res := tx.Table(trace.GlobalConfig.Mysql.SpanTableName).Create(trace_data)
 
 	if res.Error != nil {
-		db.Rollback()
+		tx.Rollback()
 		return res.Error
 	}
 
 	// Insert Tag
-	tags := make([]trace.Tag, len(spanner.Tags))
-	index := 0
 	for key, value := range spanner.Tags {
-		tags[index].SpanId = spanner.SpanId
+		res := tx.Table(trace.GlobalConfig.Mysql.TagTableName).Create(&trace.Tag{
+			SpanId: spanner.SpanId,
+			Field:  key,
+			Value:  fmt.Sprintf("%+v", value),
+		})
 
-		tags[index].Field = key
-		bytes, err := json.Marshal(value)
-		if err != nil {
-			tags[index].Value = err.Error()
-		} else {
-			tags[index].Value = string(bytes)
+		if res.Error != nil {
+			tx.Rollback()
+			return res.Error
 		}
-
-		index++
-	}
-
-	res = tx.Table(trace.GlobalConfig.Mysql.TagTableName).Create(&tags)
-	if res.Error != nil {
-		db.Rollback()
-		return res.Error
 	}
 
 	// Insert Log
-	logs := make([]trace.Log, len(spanner.Logs))
-	index = 0
 	for key, value := range spanner.Logs {
-		logs[index].SpanId = spanner.SpanId
+		res := tx.Table(trace.GlobalConfig.Mysql.LogTableName).Create(&trace.Log{
+			SpanId: spanner.SpanId,
+			Field:  key,
+			Value:  fmt.Sprintf("%+v", value.Value),
+			Time:   value.Time.Format(trace.GlobalConfig.Server.LogTimeLayout),
+		})
 
-		logs[index].Field = key
-		logs[index].Time = value.Time.Format(trace.GlobalConfig.Server.LogTimeLayout)
-		bytes, err := json.Marshal(value.Value)
-		if err != nil {
-			logs[index].Value = err.Error()
-		} else {
-			logs[index].Value = string(bytes)
+		if res.Error != nil {
+			tx.Rollback()
+			return res.Error
 		}
-
-		index++
-	}
-
-	res = tx.Table(trace.GlobalConfig.Mysql.LogTableName).Create(&logs)
-	if res.Error != nil {
-		db.Rollback()
-		return res.Error
 	}
 
 	// Insert Baggage
-	baggages := make([]trace.Baggage, len(spanner.Baggages))
-	index = 0
 	for key, value := range spanner.Baggages {
-		baggages[index].SpanId = spanner.SpanId
+		res := tx.Table(trace.GlobalConfig.Mysql.BaggageTableName).Create(&trace.Baggage{
+			SpanId: spanner.SpanId,
+			Field:  key,
+			Value:  fmt.Sprintf("%+v", value.Value),
+			Time:   value.Time.Format(trace.GlobalConfig.Server.LogTimeLayout),
+		})
 
-		baggages[index].Field = key
-		baggages[index].Time = value.Time.Format(trace.GlobalConfig.Server.BaggageTimeLayout)
-		bytes, err := json.Marshal(value.Value)
-		if err != nil {
-			baggages[index].Value = err.Error()
-		} else {
-			baggages[index].Value = string(bytes)
+		if res.Error != nil {
+			tx.Rollback()
+			return res.Error
 		}
-
-		index++
 	}
 
-	res = tx.Table(trace.GlobalConfig.Mysql.BaggageTableName).Create(&baggages)
-	if res.Error != nil {
-		db.Rollback()
-		return res.Error
-	}
-
-	db.Commit()
+	tx.Commit()
 	return nil
 }
 
