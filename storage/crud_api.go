@@ -5,13 +5,13 @@ import (
 	"trace/storage/mysql"
 )
 
-type API interface {
+type CRUDAPI interface {
 	LoadTracer(*trace.Tracer) error
 	SaveTracer(*trace.Tracer) error
 	LoadSpanner(*trace.Spanner) error
 	SaveSpanner(*trace.Spanner) error
 }
 
-func DefaultAPI() API {
+func DefaultCRUDAPI() CRUDAPI {
 	return &mysql.Mysql{}
 }

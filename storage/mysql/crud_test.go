@@ -9,8 +9,8 @@ import (
 	"trace/storage/mysql"
 )
 
-func TestMysql(t *testing.T) {
-	var saver storage.API
+func TestCRUD(t *testing.T) {
+	var saver storage.CRUDAPI
 	saver = &mysql.Mysql{}
 
 	var err error
