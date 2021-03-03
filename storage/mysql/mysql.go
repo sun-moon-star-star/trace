@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"encoding/json"
 	"errors"
 	"time"
 	"trace"
@@ -18,21 +19,20 @@ import (
 type Mysql struct{}
 
 func (mysql *Mysql) SaveTracer(tracer *trace.Tracer) error {
-	params := make(map[string]interface{})
-	data := &trace.Trace{}
-
 	if tracer.TraceId == 0 {
-		return errors.New("tracer.TraceId must be setting")
+		return errors.New("trace.Tracer.TraceId must be setting")
 	}
 
-	data.TraceId = tracer.TraceId
-	data.TraceName = tracer.TraceName
-	data.StartTime = tracer.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout)
-	data.EndTime = tracer.EndTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout)
-	data.Summary = tracer.Summary
-
-	params["table"] = trace.GlobalConfig.Mysql.TraceTableName
-	params["data"] = data
+	params := map[string]interface{}{
+		"table": trace.GlobalConfig.Mysql.TraceTableName,
+		"data": &trace.Trace{
+			TraceId:   tracer.TraceId,
+			TraceName: tracer.TraceName,
+			StartTime: tracer.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+			EndTime:   tracer.EndTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+			Summary:   tracer.Summary,
+		},
+	}
 
 	_, err := InsertTable(params)
 	return err
@@ -78,6 +78,106 @@ func (mysql *Mysql) LoadTracer(tracer *trace.Tracer) (*trace.Tracer, error) {
 	return res, nil
 }
 
-func (mysql *Mysql) SaveSpanner(*trace.Spanner) error {
+func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) error {
+	if spanner.TraceId == 0 {
+		return errors.New("trace.Spanner.TraceId must be setting")
+	}
 
+	// InsertSpan
+	if spanner.Summary == "" {
+		spanner.Summary = spanner.Strategy.Summary(spanner)
+	}
+
+	_, err := InsertTable(map[string]interface{}{
+		"table": trace.GlobalConfig.Mysql.SpanTableName,
+		"data": &trace.Span{
+			SpanId:       spanner.SpanId,
+			ParentSpanId: spanner.ParentSpanId,
+			SpanName:     spanner.SpanName,
+			TraceId:      spanner.TraceId,
+			StartTime:    spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+			EndTime:      spanner.StartTime.Format(trace.GlobalConfig.Server.DefaultTimeLayout),
+			Summary:      spanner.Summary,
+			Flags:        spanner.Flags,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	// Insert Tag
+	tags := make([]trace.Tag, len(spanner.Tags))
+	index := 0
+	for key, value := range spanner.Tags {
+		tags[index].SpanId = spanner.SpanId
+
+		tags[index].Field = key
+		bytes, err := json.Marshal(value)
+		if err != nil {
+			tags[index].Value = err.Error()
+		} else {
+			tags[index].Value = string(bytes)
+		}
+
+		index++
+	}
+
+	_, err = InsertTable(map[string]interface{}{
+		"table": trace.GlobalConfig.Mysql.TagTableName,
+		"data":  &tags,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Insert Log
+	logs := make([]trace.Log, len(spanner.Logs))
+	index = 0
+	for key, value := range spanner.Logs {
+		logs[index].SpanId = spanner.SpanId
+
+		logs[index].Field = key
+		logs[index].Time = value.Time.Format(trace.GlobalConfig.Server.LogTimeLayout)
+		bytes, err := json.Marshal(value.Value)
+		if err != nil {
+			logs[index].Value = err.Error()
+		} else {
+			logs[index].Value = string(bytes)
+		}
+
+		index++
+	}
+
+	_, err = InsertTable(map[string]interface{}{
+		"table": trace.GlobalConfig.Mysql.LogTableName,
+		"data":  &logs,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Insert Baggage
+	baggages := make([]trace.Baggage, len(spanner.Baggages))
+	index = 0
+	for key, value := range spanner.Baggages {
+		baggages[index].SpanId = spanner.SpanId
+
+		baggages[index].Field = key
+		baggages[index].Time = value.Time.Format(trace.GlobalConfig.Server.BaggageTimeLayout)
+		bytes, err := json.Marshal(value.Value)
+		if err != nil {
+			baggages[index].Value = err.Error()
+		} else {
+			baggages[index].Value = string(bytes)
+		}
+
+		index++
+	}
+
+	_, err = InsertTable(map[string]interface{}{
+		"table": trace.GlobalConfig.Mysql.LogTableName,
+		"data":  &baggages,
+	})
+
+	return err
 }

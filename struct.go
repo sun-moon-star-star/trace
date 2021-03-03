@@ -11,7 +11,7 @@ type Trace struct {
 
 type Span struct {
 	SpanId       uint64 `json:"span_id" gorm:"type:bigint(20) unsigned not null primaryKey autoIncrement;"`
-	FatherSpanId uint64 `json:"father_span_id" gorm:"type:bigint(20) unsigned not null;"`
+	ParentSpanId uint64 `json:"parent_span_id" gorm:"type:bigint(20) unsigned not null;"`
 	SpanName     string `json:"span_name" gorm:"varchar(255)"`
 	TraceId      uint64 `json:"trace_id" gorm:"type:bigint(20)"`
 	StartTime    string `json:"start_time" gorm:"datetime(6)"`

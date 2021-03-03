@@ -19,13 +19,18 @@ type Server struct {
 }
 
 type Mysql struct {
-	Hostname       string `yaml:"hostname"`
-	Port           uint32 `yaml:"port"`
-	Username       string `yaml:"username"`
-	Password       string `yaml:"password"`
-	Network        string `yaml:"network"`
-	Database       string `yaml:"database"`
-	TraceTableName string `yaml:"trace_table_name"`
+	Hostname string `yaml:"hostname"`
+	Port     uint32 `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	Network  string `yaml:"network"`
+	Database string `yaml:"database"`
+
+	TraceTableName   string `yaml:"trace_table_name"`
+	SpanTableName    string `yaml:"span_table_name"`
+	TagTableName     string `yaml:"tag_table_name"`
+	LogTableName     string `yaml:"log_table_name"`
+	BaggageTableName string `yaml:"baggage_table_name"`
 
 	ConnMaxLifeTime uint32 `yaml:"conn_max_life_time"`
 	MaxIdleConns    uint32 `yaml:"max_idle_conns"`
