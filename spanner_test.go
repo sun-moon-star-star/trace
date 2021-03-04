@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 	"trace"
-	"trace/random"
 	"trace/uuid"
 )
 
@@ -31,7 +30,7 @@ func TestSpan(t *testing.T) {
 	spanner.Log("action", "success")
 
 	info := TestInfo{
-		Id:   random.RandomUint64(),
+		Id:   123456,
 		Desc: "test_info",
 		Time: time.Now(),
 	}
