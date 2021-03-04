@@ -1,4 +1,4 @@
-package trace
+package uuid
 
 import (
 	"sync"
@@ -20,7 +20,7 @@ var DefaultClockCallbackStrategy ClockCallbackStrategy = func(millis uint64, seq
 }
 
 type UUIdGenerator struct {
-	projectId uint64
+	ProjectId uint64
 
 	millisecondTimestamp uint64 // 41 bits
 	sequenceId           uint32 // 12 bits
@@ -55,7 +55,7 @@ func (g *UUIdGenerator) NewUUID() uint64 {
 	g.lock.Unlock()
 
 	traceId := millis << 22              // 41-bit millisecond timestamp
-	traceId += uint64(g.projectId) << 12 // 10-bit projectId
+	traceId += uint64(g.ProjectId) << 12 // 10-bit projectId
 	traceId += uint64(seq)               // 12-bit sequenceId
 
 	return traceId

@@ -7,6 +7,7 @@ import (
 	"time"
 	"trace"
 	"trace/random"
+	"trace/uuid"
 )
 
 type TestInfo struct {
@@ -49,7 +50,7 @@ func TestSpan(t *testing.T) {
 	spanner.BaggageStrategy(func(maps trace.SpanMap) string {
 		var info string
 		for key, value := range maps {
-			info += fmt.Sprintf(" [%s(%s)baby: %+v]", key, trace.TimeFormatFromUUID(value.Id), value.Value)
+			info += fmt.Sprintf(" [%s(%s)baby: %+v]", key, uuid.TimeFormatFromUUID(value.Id), value.Value)
 		}
 		return info
 	})

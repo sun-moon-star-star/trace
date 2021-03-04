@@ -3,6 +3,7 @@ package trace
 import (
 	"io/ioutil"
 	"os"
+	"trace/uuid"
 
 	"gopkg.in/yaml.v2"
 )
@@ -67,7 +68,7 @@ func loadConfig(filepath string) (*ConfigT, error) {
 
 func setDefault() {
 	// projectId必须单实例唯一
-	GlobalUUIDGenerator.projectId = Config.Server.TraceId.ProjectId
+	uuid.GlobalUUIDGenerator.ProjectId = Config.Server.TraceId.ProjectId
 }
 
 func init() {

@@ -2,6 +2,7 @@ package trace
 
 import (
 	"time"
+	"trace/uuid"
 )
 
 type SpanMap map[string]ValueInfo
@@ -40,7 +41,7 @@ type Spanner struct {
 
 func NewSpanner(SpanName string, TraceId, ParentSpanId uint64) *Spanner {
 	s := &Spanner{
-		SpanId:       NewUUID(),
+		SpanId:       uuid.NewUUID(),
 		SpanName:     SpanName,
 		TraceId:      TraceId,
 		ParentSpanId: ParentSpanId,
@@ -76,21 +77,21 @@ func (s *Spanner) End() {
 
 func (s *Spanner) Tag(key string, value interface{}) {
 	s.Tags[key] = ValueInfo{
-		Id:    NewUUID(),
+		Id:    uuid.NewUUID(),
 		Value: value,
 	}
 }
 
 func (s *Spanner) Log(key string, value interface{}) {
 	s.Logs[key] = ValueInfo{
-		Id:    NewUUID(),
+		Id:    uuid.NewUUID(),
 		Value: value,
 	}
 }
 
 func (s *Spanner) Baggage(key string, value interface{}) {
 	s.Baggages[key] = ValueInfo{
-		Id:    NewUUID(),
+		Id:    uuid.NewUUID(),
 		Value: value,
 	}
 }

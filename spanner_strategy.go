@@ -3,6 +3,7 @@ package trace
 import (
 	"fmt"
 	"time"
+	"trace/uuid"
 )
 
 type SpannerStrategy interface {
@@ -65,7 +66,7 @@ var GlobalDefaultSpannerStrategy SpannerStrategy = &DefaultSpannerStrategy{}
 func (*DefaultSpannerStrategy) SpannerTagStrategy(maps SpanMap) string {
 	var info string
 	for key, value := range maps {
-		info += fmt.Sprintf(" [%s(%s): %+v]", key, TimeFormatFromUUID(value.Id), value.Value)
+		info += fmt.Sprintf(" [%s(%s): %+v]", key, uuid.TimeFormatFromUUID(value.Id), value.Value)
 	}
 	return info
 }
@@ -73,7 +74,7 @@ func (*DefaultSpannerStrategy) SpannerTagStrategy(maps SpanMap) string {
 func (*DefaultSpannerStrategy) SpannerLogStrategy(maps SpanMap) string {
 	var info string
 	for key, value := range maps {
-		info += fmt.Sprintf(" [%s(%s): %+v]", key, TimeFormatFromUUID(value.Id), value.Value)
+		info += fmt.Sprintf(" [%s(%s): %+v]", key, uuid.TimeFormatFromUUID(value.Id), value.Value)
 	}
 	return info
 }
@@ -81,7 +82,7 @@ func (*DefaultSpannerStrategy) SpannerLogStrategy(maps SpanMap) string {
 func (*DefaultSpannerStrategy) SpannerBaggageStrategy(maps SpanMap) string {
 	var info string
 	for key, value := range maps {
-		info += fmt.Sprintf(" [%s(%s)->: %+v]", key, TimeFormatFromUUID(value.Id), value.Value)
+		info += fmt.Sprintf(" [%s(%s)->: %+v]", key, uuid.TimeFormatFromUUID(value.Id), value.Value)
 	}
 	return info
 }
@@ -91,11 +92,11 @@ func (strategy *DefaultSpannerStrategy) SpannerStrategy(s *Spanner) string {
 
 	if s.Flags&SpannerStop > 0 {
 		info = fmt.Sprintf("[%s, %s]",
-			TimeFormatFromUUID(s.SpanId),
+			uuid.TimeFormatFromUUID(s.SpanId),
 			time.Unix(int64(s.EndTimestamp)/1e3, int64(s.EndTimestamp)%1e3*1e6).Format("2006-01-02 15:04:05.000"))
 	} else {
 		info = fmt.Sprintf("[%s, %s]",
-			TimeFormatFromUUID(s.SpanId),
+			uuid.TimeFormatFromUUID(s.SpanId),
 			time.Now().Format("2006-01-02 15:04:05.000"))
 	}
 

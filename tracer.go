@@ -1,6 +1,9 @@
 package trace
 
-import "time"
+import (
+	"time"
+	"trace/uuid"
+)
 
 const (
 	TracerStop = 1 << iota
@@ -43,7 +46,7 @@ type Tracer struct {
 
 func NewTracer(TraceName string) *Tracer {
 	return &Tracer{
-		TraceId:   NewUUID(),
+		TraceId:   uuid.NewUUID(),
 		TraceName: TraceName,
 
 		TracerStrategy: DefaultTracerStrategy,
