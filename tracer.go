@@ -14,8 +14,15 @@ var DefaultTracerStrategy *TracerStrategy
 
 func init() {
 	DefaultTracerStrategy = &TracerStrategy{
-		Summary: func(*Tracer) string {
-			return ""
+		Summary: func(t *Tracer) string {
+			if t.First == nil {
+				return ""
+			}
+			s := t.First
+			for s.Children != nil {
+				s = s.Children
+			}
+			return s.BaggageString()
 		},
 	}
 }
