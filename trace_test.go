@@ -7,14 +7,12 @@ import (
 )
 
 func TestTracer(t *testing.T) {
-	var err error
-
-	tracer := trace.NewTracer()
-	tracer.TraceName, err = random.RandomUUID()
-
+	TraceName, err := random.RandomUUID()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	tracer := trace.NewTracer(TraceName)
 
 	tracer.End()
 	tracer.Summary = "love babe"

@@ -3,8 +3,22 @@ package trace
 import "time"
 
 const (
-	FlagStop = iota
+	TracerStop = 1 << iota
 )
+
+type TracerStrategy struct {
+	Summary func(*Tracer) string
+}
+
+var DefaultTracerStrategy *TracerStrategy
+
+func init() {
+	DefaultTracerStrategy = &TracerStrategy{
+		Summary: func(*Tracer) string {
+			return ""
+		},
+	}
+}
 
 type Tracer struct {
 	TraceId   uint64
@@ -15,23 +29,29 @@ type Tracer struct {
 
 	Summary string
 
+	TracerStrategy *TracerStrategy
+
 	First *Spanner
 }
 
-func NewTracer() *Tracer {
+func NewTracer(TraceName string) *Tracer {
 	return &Tracer{
-		TraceId: NewUUID(),
+		TraceId:   NewUUID(),
+		TraceName: TraceName,
+
+		TracerStrategy: DefaultTracerStrategy,
 	}
 }
 
 func (t *Tracer) End() {
-	t.EndTimestamp = uint64(time.Now().UnixNano() / 1e6)
-	t.Flags |= FlagStop
+	if t.Flags&TracerStop != TracerStop {
+		t.EndTimestamp = uint64(time.Now().UnixNano() / 1e6)
+		t.Flags |= TracerStop
+	}
 }
 
-func (t *Tracer) NewSpanner() *Spanner {
-	s := NewSpanner()
-	s.TraceId = t.TraceId
+func (t *Tracer) NewSpanner(SpanName string, ParentSpanId uint64) *Spanner {
+	s := NewSpanner(SpanName, t.TraceId, ParentSpanId)
 
 	if t.First == nil {
 		t.First = s

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 	"trace"
-	"trace/random"
 	"trace/storage"
 	"trace/storage/mysql"
 )
@@ -15,14 +14,9 @@ func TestCRUD(t *testing.T) {
 
 	var err error
 
-	tracer := trace.NewTracer()
-	tracer.TraceName, err = random.RandomUUID()
+	tracer := trace.NewTracer("tracer_test")
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	a := tracer.NewSpanner()
+	a := tracer.NewSpanner("span_test_a", 0)
 	a.SpanName = "A"
 	a.Tag("A-Tag", 1)
 	a.Log("A-Log", "alog")
@@ -34,7 +28,7 @@ func TestCRUD(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b := tracer.NewSpanner()
+	b := a.NewSpanner("span_test_b")
 	b.SpanName = "B"
 	b.ParentSpanId = a.SpanId
 	b.Tag("B-Tag", a)

@@ -147,7 +147,7 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 
 	// InsertSpan
 	if spanner.Summary == "" {
-		spanner.Summary = spanner.Strategy.Summary(spanner)
+		spanner.Summary = spanner.SummaryString()
 	}
 
 	if spanner.SpanId == 0 {
