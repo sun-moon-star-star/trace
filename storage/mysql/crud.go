@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"trace"
+	"trace/uuid"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -151,7 +152,7 @@ func (mysql *Mysql) SaveSpanner(spanner *trace.Spanner) (err error) {
 	}
 
 	if spanner.SpanId == 0 {
-		spanner.SpanId = trace.NewUUID()
+		spanner.SpanId = uuid.NewUUID()
 	}
 
 	if spanner.ParentSpanId == 0 {

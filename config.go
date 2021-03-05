@@ -14,11 +14,14 @@ type ConfigT struct {
 }
 
 type TraceId struct {
-	ProjectId uint64 `yaml:"project_id"`
+	ProjectIdCheck    int8   `yaml:"project_id_check"`    // 强制设置为project_id
+	ProjectIdStrategy int8   `yaml:"project_id_strategy"` // project_id选取策略key的方式: 1. 本机ip
+	ProjectId         uint16 `yaml:"project_id"`          // 期望的project_id
 }
 
 type Server struct {
-	TraceId TraceId `yaml:"trace_id"`
+	ModuleName string  `yaml:"module_name"`
+	TraceId    TraceId `yaml:"trace_id"`
 }
 
 type Mysql struct {
