@@ -71,7 +71,7 @@ func loadConfig(filepath string) (*ConfigT, error) {
 
 func setDefault() {
 	// projectId必须单实例唯一
-	uuid.GlobalUUIDGenerator.ProjectId = Config.Server.TraceId.ProjectId
+	uuid.GlobalUUIDGenerator.ProjectId = uint64(Config.Server.TraceId.ProjectId)
 }
 
 func init() {

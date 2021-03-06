@@ -12,8 +12,15 @@ import (
 
 type ClockCallbackStrategy func(millis uint64, seq uint32) (uint64, uint32)
 
+const (
+	ProjectIdBits  = 10
+	SequenceIdBits = 12
+	MaxProjectId   = (1 << ProjectIdBits) - 1
+	MaxSequenceId  = (1 << SequenceIdBits) - 1
+)
+
 var DefaultClockCallbackStrategy ClockCallbackStrategy = func(millis uint64, seq uint32) (uint64, uint32) {
-	if seq == 4095 {
+	if seq == MaxSequenceId {
 		return millis + 1, 0
 	}
 	return millis, seq + 1
@@ -54,9 +61,9 @@ func (g *UUIdGenerator) NewUUID() uint64 {
 
 	g.lock.Unlock()
 
-	traceId := millis << 22              // 41-bit millisecond timestamp
-	traceId += uint64(g.ProjectId) << 12 // 10-bit projectId
-	traceId += uint64(seq)               // 12-bit sequenceId
+	traceId := millis << (SequenceIdBits + ProjectIdBits) // 41-bit millisecond timestamp
+	traceId += uint64(g.ProjectId) << SequenceIdBits      // 10-bit projectId
+	traceId += uint64(seq)                                // 12-bit sequenceId
 
 	return traceId
 }
@@ -66,9 +73,10 @@ func NewUUID() uint64 {
 }
 
 func TimestampFromUUID(uuid uint64) uint64 {
-	return uuid >> 22
+	return uuid >> (SequenceIdBits + ProjectIdBits)
 }
 
 func TimeFormatFromUUID(uuid uint64) string {
-	return time.Unix(int64(uuid>>22)/1e3, int64(uuid>>22)%1e3*1e6).Format("2006-01-02 15:04:05.000")
+	return time.Unix(int64(uuid>>(SequenceIdBits+ProjectIdBits))/1e3,
+		int64(uuid>>(SequenceIdBits+ProjectIdBits))%1e3*1e6).Format("2006-01-02 15:04:05.000")
 }

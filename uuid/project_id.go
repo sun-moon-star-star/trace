@@ -2,7 +2,9 @@ package uuid
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
+	"trace"
 )
 
 func getIPs(len int) (ips []string) {
@@ -28,4 +30,37 @@ func getIPs(len int) (ips []string) {
 		}
 	}
 	return ips
+}
+
+func getIdentifier() (identifier string) {
+	identifier = trace.Config.Server.ModuleName
+	// ip
+	if trace.Config.Server.TraceId.ProjectIdStrategy == 1 {
+		ips := getIPs(1)
+		if len(ips) > 0 {
+			identifier += "_" + ips[0]
+		}
+	}
+	return identifier
+}
+
+func checkProjectId(projectId uint16) bool {
+	return true
+}
+
+func applyProjectId() uint16 {
+	return uint16(rand.Intn(MaxProjectId) + 1)
+}
+
+func GetProjectId() uint16 {
+	check := trace.Config.Server.TraceId.ProjectIdCheck
+	projectId := trace.Config.Server.TraceId.ProjectId
+
+	if projectId > 0 {
+		if check == 0 || checkProjectId(projectId) {
+			return projectId
+		}
+	}
+
+	return applyProjectId()
 }
